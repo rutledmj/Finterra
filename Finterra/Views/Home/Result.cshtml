@@ -1,0 +1,266 @@
+﻿
+<div id="layout" class="container" >
+
+</div>
+@section Scripts{
+    <script src="/lib/quotestream/qmci-streamer-2.38.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js library -->
+
+    <script>
+        const layout = document.getElementById("layout");
+        const wmid = 103081;
+        const username = `CSEuser_3d88e9f6-8cba-4969-b799-ca2910f65307`;
+        const password = `Pp1169143199222038822511717241911142402381161582490`;
+
+        const year = 2024;
+        const month = 3;
+        const day = 05;
+
+        const callput = "Put";
+
+        const interval = 10;
+        const daysPast = 5;
+        const daysForward = 2;
+
+
+        let date = new Date(year, month-1, day);
+
+
+        const Symbols = [
+            //"^DJI",
+            "AAP", 
+            "ABC", "ANET", "ANTM", "ASR", "AXP", "AYX", "AZO", "BA", "BABA", "BAP", "BBY", "BDX", "BIO", "BLK", "BURL", "CABO", "CAT", "CEO", "CHE", "CI", "CMG", "CMI", "COO", "CRM", "CVNA", "DE", "DECK", "DGX", "DPZ",
+            "EFX", "ESS", "FDX", "FICO", "FLT", "FNV", "FSLY", "GPN", "GS", "GWW", "HD", "HII", "HUBS", "HUM", "IBM", "IFF", "IWO", "KOLD", "KWR", "LABU", "LEA", "LH", "LHX", "LII", "LMT", "MA", "MCK", "MDY", "MHK",
+            "MLM", "MMM", "MOH", "MSCI", "MSI", "MTD", "MTN", "NEE", "NEU", "NOC", "NOW", "NSC", "NUGT", "PANW", "PAYC", "PEN", "PII", "PPG", "PRLB", "PVH", "PXD", "QLD", "RACE", "RNG", "RNR", "ROG", "ROK", "ROP",
+            "SAM", "SHOP", "SHW", "SITE", "SOXL", "SPGI", "SPOT", "SPY", "SQ", "SYK", "TDG", "TDOC", "TDY", "TFX", "TMO", "TWLO", "TYL", "UNH", "UNP", "UPS", "URI", "VAC", "VEEV", "VMW", "W", "WEX", "WHR", "WSO", "WST", "Y",
+            "ZEN",
+
+            //"^COMPX",
+            "AAPL", "ABMD", "ADBE", "ALGN", "ALGT", "AMED", "AMGN", "AMZN", "ANSS", "APPF", "ASML", "AVGO", "BGNE", "BIDU", "BIIB", "BKNG", "BLUE", "BYND", "BZUN", "CACC", "CHDN", "CHTR", "COST", "COUP",
+            "CRWD", "CSGP", "CTAS", "CVCO", "CYBR", "DDOG", "DOCU", "DXCM", "EQIX", "ESGR", "EXAS", "FB", "FCNCA", "FIVE", "GH", "GOOGL", "GWPH", "HELE", "IDXX", "ILMN", "INTU", "IPGP", "ISRG", "JAZZ", "KLAC", "LFUS",
+            "LITE", "LOPE", "LRCX", "LULU", "MAR", "MASI", "MCHP", "MDB", "MELI", "MKTX", "MPWR", "MSTR", "NFLX", "NTES", "NVDA", "NXPI", "ODFL", "OKTA", "OLED", "ORLY", "PCTY", "PFPT", "POOL", "QCOM", "QQQ", "REGN",
+            "ROKU", "SAGE", "SBAC", "SEDG", "SIVB", "SNPS", "SOXX", "SPLK", "STMP", "SWKS", "TEAM", "TECH", "TQQQ", "TREE", "TSLA", "TTD", "TTWO", "UHAL", "VRTX", "WDAY", "WIX", "WLTW", "WRLD", "WYNN", "XLNX",
+            "ZBRA", "ZM", "ZS"
+            ];
+
+        let SID = "";
+
+        window.onload = function () {
+            var Streamer = qmci.Streamer;
+
+            Streamer.login({
+                host: 'https://app.quotemedia.com/auth',
+                credentials: {
+                    wmid: wmid,
+                    username: username,
+                    password: password
+                }
+            }, then(function (sid) {
+                console.log(sid);
+                SID = sid;
+                startLoop();
+            }));
+
+            function then(onSuccess) {
+                return function (err, result) {
+                    if (err) {
+                        print(err, "red");
+                    } else {
+                        onSuccess(result);
+                    }
+                }
+            }
+
+            async function startLoop(){
+                for(const symbol of Symbols){
+                    console.log(symbol);
+                    const quote = await getIntervals(symbol, date, date);
+                    if(quote.results.intraday && quote.results.intraday[0].interval){
+                        const price = quote.results.intraday[0].interval[0].close;
+                        const chains = await getOptionChain(symbol, price, date);
+                        if(chains.quotedata){
+                            var arr = [];
+                            let data;
+                            for(const chain of chains.quotedata){
+                                console.log(chain);
+                                const startDate = addDays(date, -daysPast);
+                                const endDate = addDays(date, daysForward)
+                                data = await getIntervals(chain.symbol, startDate, endDate)
+
+                                arr = createArray(data, arr);
+                            }
+                            arr.sort((a, b) => {
+                                if (a.startdatetime < b.startdatetime) {
+                                    return 1;
+                                }
+                                if (a.startdatetime > b.startdatetime) {
+                                    return -1;
+                                }
+                                return 0;
+                            });
+
+                            console.log(arr);
+                            draw(arr, data.results.intraday[0].equityinfo.longname);
+                        }
+                    }
+                }
+            }
+
+            function createArray(data, arr){
+                if (data.results.intraday && data.results.intraday[0].interval) {
+                    for(const interval of data.results.intraday[0].interval){
+
+                        const foundIndex = arr.findIndex(item => item.startdatetime === interval.startdatetime);
+
+                        if (foundIndex !== -1) {
+                            // If found, update the shareVolume of that item
+                            arr[foundIndex].sharevolume += interval.sharevolume;
+                        } else {
+                            // If not found, add the new interval to the array
+                            arr.push(interval);
+                        }
+                    }
+                }
+
+                return arr;
+            }
+
+            let index = 0;
+
+            function draw(arr, symbol){
+                if(arr.length > 0){
+                    // Filter the data based on the provided dates
+                    const filteredData = arr;
+
+                    const shareVolumes = filteredData.map(item => item.sharevolume).reverse();
+                    const dates = filteredData.map(item => new Date(item.startdatetime)).reverse();
+
+                    const col = document.createElement("div");
+                    col.classList = "col-6";
+
+                    index++;
+                    const canvas = document.createElement("canvas");
+                    var id = 'chartCanvas-' + index;
+                    canvas.id = id; // Unique ID for each canvas
+
+                    Object.assign(canvas, {
+                        width: 600,
+                        height:400,
+                        style :`height:400px;width:600px`
+                    });
+
+                    col.appendChild(canvas);
+                    layout.appendChild(col);
+
+                    // Create an array for the backgroundColors
+                    const backgroundColors = dates.map(date => {
+                        // Check if the date is October 30th
+                        return date.getMonth() === month - 1 && date.getDate() === day ? 'red' : 'rgba(54, 162, 235, 0.2)';
+                    });
+
+                    // Get the context of the canvas element
+                    var ctx = canvas.getContext('2d');
+
+                    // Create the bar chart
+                    var myChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: dates.map(date => date.toLocaleString()),
+                            datasets: [{
+                                label: symbol,
+                                data: shareVolumes,
+                                backgroundColor: backgroundColors, // Use the dynamic backgroundColors array
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { // Correct for Chart.js version 3
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+
+                }
+            }
+
+            function getOptionChain(symbol, price, date){
+                const startDate = format(addMonths(date, 4));
+                const endDate = format(addMonths(date, 7));
+                return fetch(`https://app.quotemedia.com/data/getOptionChain.json?webmasterId=${wmid}&sid=${SID}&symbol=${symbol}&expire=STAN&callput=${callput}&money=All&expireMin=${startDate}&expireMax=${endDate}&strikeMin=${price - 10}&strikeMax=${price + 10}`)
+                    .then(response => {
+                        // Check if the response is ok (status 200)
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json(); // Convert the response to JSON
+                    })
+                    .then(data => {
+                        console.log(data); // Log the data
+                        return data; // Return the data for further processing
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                        throw error; // Rethrow the error to handle it in the caller function
+                    });
+            }
+
+            function getIntervals(symbol, stdate, enddate) {
+                // Return the fetch promise
+                return fetch(`https://app.quotemedia.com/data/getIntervals.json?webmasterId=${wmid}&sid=${SID}&symbol=${symbol}&interval=${interval}&start=${format(stdate)}&end=${format(enddate)}&marketSession=mkt`)
+                    .then(response => {
+                        // Check if the response is ok (status 200)
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json(); // Convert the response to JSON
+                    })
+                    .then(data => {
+                        console.log(data); // Log the data
+                        return data; // Return the data for further processing
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                        throw error; // Rethrow the error to handle it in the caller function
+                    });
+            }
+
+            function addMonths(inputDate, val) {
+                var date = new Date(inputDate);
+                date.setMonth(date.getMonth() + val);
+                date.setDate(1);
+
+                // Handle year rollover if the new month exceeds 12
+                return date;
+            }
+
+            function addDays(inputDate, val) {
+                var date = new Date(inputDate);
+                date.setDate(date.getDate() + val);
+
+                // Handle year rollover if the new month exceeds 12
+                return date;
+            }
+
+            function format(date) {
+                var d = new Date(date),
+                    month = '' + (d.getMonth() + 1),
+                    day = '' + d.getDate(),
+                    year = d.getFullYear();
+
+                // Add a leading zero to month and day if they are less than 10
+                if (month.length < 2)
+                    month = '0' + month;
+                if (day.length < 2)
+                    day = '0' + day;
+
+                return [year, month, day].join('-');
+            }
+        }
+
+    </script>
+}

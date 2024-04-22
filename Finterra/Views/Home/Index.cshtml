@@ -1,0 +1,22 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<style>
+
+</style>
+<div id="flex-workspace" style="height:100vh">
+
+</div>
+
+@section Scripts{
+    <script src="/lib/quotestream/qmci-streamer-2.38.0.min.js"></script>
+    <script type="module">
+        import { Flex } from './flex/flex.js';
+        var f = new Flex({
+            wmid: 103081,
+            username: `CSEuser_3d88e9f6-8cba-4969-b799-ca2910f65307`,
+            password: `Pp1169143199222038822511717241911142402381161582490`,
+            container: 'flex-workspace'
+        });
+    </script>
+}
