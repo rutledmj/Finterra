@@ -4,7 +4,7 @@ import { Divider, Interval } from './Utils.js'
 import { QuotemediaService } from './Data/QuotemediaService.js';
 import { Workspace } from './Workspace.js';
 import { AlchemChartsService } from './Data/AlchemChartsService.js';
-
+import { Indicators } from './Studies/Studies.js';
 export class Flex {
     constructor(options) {
         this.container = document.getElementById(options.container || 'body')
@@ -35,7 +35,7 @@ export class Flex {
             email: 'rutledmj@gmail.com',
             password: 'AppleTest1'
         });
-        await this.alchemcharts.initialize();
+        //await this.alchemcharts.initialize();
     }
 
     async initializeStreamer() {
@@ -49,7 +49,7 @@ export class Flex {
         return this.quotestream;
     }
 
-    initializeChart() {
+    async initializeChart() {
         console.log(this.workspace.charts);
         for (let chart of this.workspace.charts) {
             
@@ -57,20 +57,12 @@ export class Flex {
             const startDate = new Date(endDate);
             startDate.setFullYear(startDate.getFullYear() - 10);
 
-            chart.data = this.alchemcharts.indexTS(chart.symbol, startDate, endDate, chart.interval)
+            chart.data = await this.alchemcharts.indexTS(chart.symbol, startDate, endDate, chart.interval)
                 .then(response => {
                     return response;
                 });
 
-            console.log(chart.data);
-
-            for (let pane of chart.panes) {
-                for (let study of pane.studies) {
-                    console.log(study);
-                }
-            }
-            //calcaulate
-            //draw
+            chart.paint();
         }
     }
 

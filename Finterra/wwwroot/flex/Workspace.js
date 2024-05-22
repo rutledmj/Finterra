@@ -1,4 +1,4 @@
-﻿import { Chart } from './Chart.js';
+﻿import { Chart } from './Charts/chart.js';
 import { Interval } from './Utils.js'
 
 export class Workspace {
@@ -19,8 +19,6 @@ export class Workspace {
         this.container = this.createWorkspace();
         this.parent.appendChild(this.container);
 
-        //this.appendCharts();
-
         this.charts = [
             new Chart({
                 symbol: 'GOOG',
@@ -29,13 +27,6 @@ export class Workspace {
                 workspace: this
             })
         ];
-    }
-
-    appendCharts() {
-        if (this.charts)
-            for (let chart of this.charts) {
-                //chart.appendTo(this.container);
-            }
     }
 
     createWorkspace() {

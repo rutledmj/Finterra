@@ -1,5 +1,5 @@
 ﻿import { createElement } from './Utils.js';
-
+import { Indicators } from './Studies/Studies.js';
 export class Chart {
     constructor({ symbol, interval, depth, workspace }) {
         Object.assign(this, { symbol, interval, depth, workspace });
@@ -9,11 +9,12 @@ export class Chart {
         this.workspaceContainer = this.workspace.container;
 
         this.dateAxisHeight = 28;
-        this.priceAxisWidth = 86;
+        this.priceAxisWidth = 60;
 
-        this.backgroundColor =
-            //"#f5f5f8";
-            "#fff";
+        this.barSpacing = 8;
+        this.barWidth = 12;
+
+        this.backgroundColor ="#fff";
 
         this.borderColor = "#c0c0c0";
 
@@ -25,6 +26,8 @@ export class Chart {
             width: `${this.workspaceWidth}px`, height: `${this.workspaceHeight}px`, position: 'relative'
         });
 
+        this.onWheelScroll();
+
         this.dateAxis = this.createAxis('date-axis', this.workspaceWidth - this.priceAxisWidth, this.dateAxisHeight, { bottom: 0, left: 0, position: 'absolute' });
 
         this.createPanes();
@@ -32,17 +35,33 @@ export class Chart {
         this.workspaceContainer.appendChild(this.chartWrapper);
     }
 
+    onWheelScroll() {
+        this.chartWrapper.onwheel = (e) => {
+            e.preventDefault();
+
+            this.barSpacing = Math.max(Math.sign(e.deltaY) + this.barSpacing, 1);
+            this.barWidth = Math.max(Math.sign(e.deltaY) + this.barWidth, 1);
+
+            for (let pane of this.panes) {
+                pane.getDataRange();
+                pane.clear();
+                pane.paint();
+                pane.paintAxis();
+            }
+        }
+    }
+
     createPanes() {
         const pricePane = {
             interval: this.interval,
             price: {
                 name: 'candlestick',
-                bodyup: 'white',
-                bodydown: 'red',
-                borderup: 'black',
-                borderdown: 'black',
-                wickup: 'black',
-                wickdown: 'black',
+                bodyup: '#089981',
+                bodydown: '#f23645',
+                borderup: '#089981',
+                borderdown: '#f23645',
+                wickup: '#089981',
+                wickdown: '#f23645',
             },
             overlays: [
                 {
@@ -53,8 +72,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'red'
-                    }
+                        color: '#ff0000'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -64,8 +84,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'line'
-                    }
+                        color: '#00ff00',
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -75,8 +96,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'darkblue'
-                    }
+                        color: '#00008b'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -86,8 +108,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'dodgerblue'
-                    }
+                        color: '#1e90ff'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -97,8 +120,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'orange'
-                    }
+                        color: '#ff8c00'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -108,8 +132,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'teal'
-                    }
+                        color: '#008080'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -119,8 +144,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'white'
-                    }
+                        color: '#ffffff'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -130,8 +156,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'black'
-                    }
+                        color: '#000000'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -141,8 +168,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'brown'
-                    }
+                        color: '#a52a2a '
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -152,8 +180,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'purple'
-                    }
+                        color: '#800080'
+                    },
+                    yscale: false
                 },
                 {
                     name: "sma",
@@ -163,8 +192,9 @@ export class Chart {
                         source: 'close'
                     },
                     style: {
-                        color: 'pink'
-                    }
+                        color: '#ffc0cb'
+                    },
+                    yscale: false
                 },
                 {
                     name: "bollingerband",
@@ -245,8 +275,8 @@ export class Chart {
             ];
 
         const paneCount = panesJSON.length + 1;
-        const paneHeight = (this.workspaceHeight - this.dateAxisHeight) / paneCount - 0;
-        const paneWidth = this.workspaceWidth - this.priceAxisWidth - 0;
+        const paneHeight = (this.workspaceHeight - this.dateAxisHeight) / paneCount;
+        const paneWidth = this.workspaceWidth - this.priceAxisWidth;
 
         this.panes = [];
 
@@ -280,8 +310,11 @@ export class Chart {
 }
 
 export class Pane {
-    constructor({ chart, width, height, top }) {
-        Object.assign(this, { chart, width, height, top });
+    constructor({ chart, options, width, height, top }) {
+        Object.assign(this, { chart, options, width, height, top });
+
+        this.min = Infinity;
+        this.max = -Infinity;
     }
 
     initialize() {
@@ -310,8 +343,138 @@ export class Pane {
         this.initialize();
         parent.appendChild(this.container);
     }
-}
 
+    calculate(data) {
+        if (this.options.overlays)
+            for (let overlay of this.options.overlays) {
+                const indicatorClass = Indicators[overlay.name.toUpperCase()];
+                if (indicatorClass) {
+                    overlay.indicator = new indicatorClass(overlay, data, this);
+                }
+            }
+
+        if (this.options.price) {
+            const priceClass = Indicators["Price"];
+            if (priceClass) {
+                this.options.price = new priceClass(this.options.price, data, this);
+            }
+        }
+    }
+
+    getDataRange() {
+        this.min = Infinity;
+        this.max = -Infinity;
+        if (this.options.overlays) {
+            for (let overlay of this.options.overlays) {
+                if (overlay.indicator && typeof overlay.indicator.getDataRange !== 'undefined') {
+                    overlay.indicator.getDataRange();
+                    if (overlay.yscale) {
+                        this.min = Math.min(overlay.indicator.min, this.min);
+                        this.max = Math.max(overlay.indicator.max, this.max);
+                    }
+                }
+            }
+        }
+
+        if (this.options.price) {
+            this.options.price.getDataRange();
+            this.min = Math.min(this.options.price.min, this.min);
+            this.max = Math.max(this.options.price.max, this.max);
+        }
+
+        let buffer = (this.max - this.min) * .05;
+        this.max += buffer;
+        this.min -= buffer;
+    }
+
+    clear() {
+        let ctx = this.pane.getContext('2d');
+        ctx.clearRect(0, 0, this.pane.width, this.pane.height);
+
+        ctx = this.axis.getContext('2d');
+        ctx.clearRect(0, 0, this.axis.width, this.axis.height);
+    }
+
+    paint() {
+        if (this.options.overlays)
+            for (let overlay of this.options.overlays) {
+                if (overlay.indicator && typeof overlay.indicator.paint !== 'undefined') {
+                    overlay.indicator.paint();
+                }
+            }
+
+        if (this.options.price) {
+            this.options.price.paint();
+        }
+    }
+
+    paintAxis() {
+
+        this.paintAxisTicks();
+
+        if (this.options.overlays)
+            for (let overlay of this.options.overlays) {
+                if (overlay.indicator && typeof overlay.indicator.paintAxis !== 'undefined') {
+                    overlay.indicator.paintAxis();
+                }
+            }
+
+        if (this.options.price && typeof this.options.price.paintAxis !== 'undefined') {
+            this.options.price.paintAxis();
+        }
+    }
+
+
+
+    paintAxisTicks() {
+        const range = this.max - this.min;
+        const stepCount = 5;
+        const width = this.axis.width;
+        const height = this.axis.height;
+
+        const steps = [
+            0.01, 0.015, 0.02, 0.025, 0.05,
+            0.1, 0.15, 0.2, 0.25, 0.5,
+            1, 1.5, 2, 2.5, 5,
+            10, 15, 20, 25, 50,
+            100, 150, 200, 250, 500,
+        ];
+
+        const g = range / stepCount;
+        const interval = steps.reduce((prev, curr) =>
+            Math.abs(curr - g) < Math.abs(prev - g) ? curr : prev
+        );
+
+        const minTick = Math.ceil(this.min / interval) * interval;
+        const maxTick = Math.floor(this.max / interval) * interval;
+
+        const ctx = this.axis.getContext('2d');
+        ctx.beginPath();
+        ctx.strokeStyle = "#aaa";
+        ctx.lineWidth = 1;
+        ctx.font = "12px Arial";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#aaa";
+
+        for (let value = minTick; value <= maxTick; value += interval) {
+            const y = Math.floor(height - ((value - this.min) / range) * height) + 0.5;
+
+            ctx.fillText(value.toFixed(2), width / 2, y);
+            ctx.moveTo(0, y);
+            ctx.lineTo(5, y);
+            ctx.stroke();
+        }
+
+        ctx.closePath();
+    }
+
+    paintDataWindow() { }
+
+    paintCrosshairs() { }
+
+    paintGrid() { }
+}
 
 export class PricePane {
     constructor() { }
