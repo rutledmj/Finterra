@@ -16,8 +16,8 @@ export class Chart {
         this.barSpacing = 4;
         this.barWidth = 6;
 
-        this.backgroundColor = "#fff";
-        this.borderColor = "#c0c0c0";
+        this.backgroundColor = "var(--chart-background)";
+        this.borderColor = "var(--chart-border)";
 
         this.offset = 0;
 
@@ -26,7 +26,10 @@ export class Chart {
 
     initialize() {
         this.chartWrapper = createElement('div', 'chart-wrapper', {
-            width: `${this.workspaceWidth}px`, height: `${this.workspaceHeight}px`, position: 'relative'
+            width: `${this.workspaceWidth}px`,
+            height: `${this.workspaceHeight}px`,
+            backgroundColor: 'var(--chart-background)',
+            position: 'relative'
         });
 
         this.onWheelScroll();
@@ -42,8 +45,8 @@ export class Chart {
         this.chartWrapper.onwheel = (e) => {
             e.preventDefault();
 
-            this.barSpacing = Math.max(Math.sign(e.deltaY) + this.barSpacing, 1);
-            this.barWidth = Math.max(Math.sign(e.deltaY) + this.barWidth, 1);
+            this.barSpacing = Math.max(Math.sign(-e.deltaY) + this.barSpacing, 1);
+            this.barWidth = Math.max(Math.sign(-e.deltaY) + this.barWidth, 1);
 
             for (let pane of this.panes) {
                 pane.getDataRange();
@@ -150,12 +153,12 @@ export class Chart {
         interval: this.interval,
         price: {
             name: 'candlestick',
-            bodyup: '#089981',
-            bodydown: '#f23645',
-            borderup: '#089981',
-            borderdown: '#f23645',
-            wickup: '#089981',
-            wickdown: '#f23645',
+            bodyup: '#fff',//'#94b694',//'#089981',
+            bodydown: '#ff0000',//#b69494',//'#f23645',
+            borderup: '#fff', //'#94b694',//'#089981',
+            borderdown: '#ff0000',//'#b69494',//'#f23645',
+            wickup: '#fff', //'#94b694',//'#089981',
+            wickdown: '#ff0000',//'#b69494',//'#f23645',
         },
         overlays: [
             {

@@ -14,9 +14,9 @@ export class Chart {
         this.barSpacing = 8;
         this.barWidth = 12;
 
-        this.backgroundColor ="#fff";
+        this.backgroundColor = 'var(--workspace-background)';
 
-        this.borderColor = "#c0c0c0";
+        this.borderColor = "var(--workspace-border)";
 
         this.initialize();
     }

@@ -1,4 +1,4 @@
-﻿import { createSpan, Window, ExchangeConversion } from '../Utils.js'
+﻿import { createSpan, Window, ExchangeConversion, createElement, buttonHover } from '../Utils.js'
 import { SEARCH_ICON } from '../Utils/Icons.js'
 
 export class SymbolSearch {
@@ -15,17 +15,11 @@ export class SymbolSearch {
     }
 
     createButton() {
-        const button = document.createElement('button');
-        button.style.cssText = "height: 100%; padding: 5px 10px; width: 124px; border: none; background-color: white; text-align: left";
-
+        const button = createElement('button', 'toolbar-button');
+        button.style.width = "124px";
+        button.style.textAlign = "left";
         // Add hover effects
-        button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = '#f0f3fa'; // Example hover style
-        });
-
-        button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = 'white';
-        });
+        buttonHover(button);
 
         button.onclick = () => {
             this.onClickEvent();
@@ -102,21 +96,22 @@ export class SymbolSearch {
         filterContainer.style.cssText = "padding:16px 16px;";
 
         this.filters.forEach((filter) => {
-            const span = createSpan(filter.display, "background-color:#f0f3fa; border-radius: 24px; padding:4px 12px; margin-right:10px; cursor:pointer; font-weight:500");
+            const span = createSpan(filter.display, "background-color:var(--button-background); border-radius: 24px; padding:4px 12px; margin-right:10px; cursor:pointer; font-weight:500");
 
             const updateSpanStyle = () => {
                 if (this.filterby === filter) {
-                    span.style.backgroundColor = "black";
-                    span.style.color = "white";
+                    span.style.backgroundColor = "var(--color)";
+                    span.style.color = "var(--button-hover)";
                 } else {
-                    span.style.backgroundColor = "#f0f3fa";
-                    span.style.color = "black"; // Reset to default color
+                    span.style.backgroundColor = "var(--button-background)";
+                    span.style.color = "var(--color)"; // Reset to default color
                 }
             };
 
             span.onmouseenter = () => {
                 if (this.filterby !== filter) {
-                    span.style.backgroundColor = "#e0e3eb";
+                    span.style.backgroundColor = "var(--button-hover)";
+                    span.style.color = "var(--color)";
                 }
             };
 
@@ -128,8 +123,8 @@ export class SymbolSearch {
                 // Update all spans to reflect the new selection
                 filterContainer.childNodes.forEach(child => {
                     if (child !== span) {
-                        child.style.backgroundColor = "#f0f3fa";
-                        child.style.color = "black";
+                        child.style.backgroundColor = "var(--button-background)";
+                        child.style.color = "var(--color)";
                     }
                 });
 
@@ -148,7 +143,7 @@ export class SymbolSearch {
         this.input = document.createElement('input');
         Object.assign(this.input, {
             placeholder: 'Search',
-            style: "border:none; background:white; outline:none; text-transform:uppercase",
+            style: "border:none; background:transparent; color:var(--color); outline:none; text-transform:uppercase",
             value: this.symbol
         });
         const span = document.createElement('span');
@@ -215,9 +210,11 @@ export class SymbolSearch {
 
         response.forEach(symbol => {
             const row = this.createRow(symbol, input);
-            row.onmouseenter = () => row.style.backgroundColor = '#f0f3fa';
-            row.onmouseleave = () => row.style.backgroundColor = 'white';
+
+            row.onmouseenter = () => row.style.backgroundColor = 'var(--button-hover)';
+            row.onmouseleave = () => row.style.backgroundColor = 'var(--button-background)';
             row.onclick = () => this.selectSymbol(symbol);
+
             fragment.appendChild(row);
         });
 
@@ -231,7 +228,7 @@ export class SymbolSearch {
 
     createRow(symbol, input) {
         const row = document.createElement('div');
-        row.style.cssText = 'padding:8px 16px; border-bottom:1px solid #f0f3fa; display:flex; cursor:pointer';
+        row.style.cssText = 'padding:8px 16px; border-bottom:1px solid var(--toolbar-border); display:flex; cursor:pointer';
 
         row.appendChild(this.addSymbolColumn(symbol.symbol, input));
         row.appendChild(this.addNameColumn(symbol.name, input));
@@ -281,7 +278,7 @@ export class SymbolSearch {
         const regex = new RegExp(escapedMatch, 'gi');
 
         // Replace matches with <span> tags
-        return text.replace(regex, (matchedText) => `<span style='font-weight:bold; color:blue'>${matchedText}</span>`);
+        return text.replace(regex, (matchedText) => `<span style='font-weight:bold; color:#94b694'>${matchedText}</span>`);
     }
 
 
@@ -291,7 +288,7 @@ export class SymbolSearch {
 
     createSearchContainer() {
         const searchContainer = document.createElement("div");
-        searchContainer.style.cssText = `padding:8px 16px; border-bottom:1px solid #e0e3eb;`;
+        searchContainer.style.cssText = `padding:8px 16px; border-bottom:1px solid var(--toolbar-border);`;
 
         return searchContainer;
     }

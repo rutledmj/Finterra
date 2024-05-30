@@ -1,4 +1,5 @@
-﻿import { CLOSE_ICON } from './Icons.js';
+﻿import { buttonHover } from '../Utils.js';
+import { CLOSE_ICON } from './Icons.js';
 
 export class Window {
     constructor(options) {
@@ -43,7 +44,7 @@ export class Window {
         backdrop.style.cssText = 'position:absolute; width:100%; height:100%';
 
         if (this.isBackdrop) {
-            backdrop.style.cssText += 'background-color:#9598a1; opacity:0.5;';
+            backdrop.style.cssText += 'background-color:#111; opacity:0.5;';
             backdrop.onclick = () => this.close();
         }
 
@@ -55,14 +56,16 @@ export class Window {
         modal.style.cssText =
             `width:840px; 
             height: 680px; 
-            background-color: white;
+            background-color:  var(--menu-background);
             border-radius: 5px;
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
-            overflow:hidden`;
+            overflow:hidden;
+            color:var(--color);
+            fill:var(--color);`;
 
         const header = this.createModalHeader();
         modal.appendChild(header);
@@ -74,7 +77,7 @@ export class Window {
 
     createModalHeader() {
         const header = document.createElement("div");
-        header.style.cssText = 'width:100%; padding:18px; font-size:20px; font-weight:600; border-bottom:1px solid #e0e3eb';
+        header.style.cssText = 'width:100%; padding:18px; font-size:20px; font-weight:600; border-bottom:1px solid var(--toolbar-border)';
         header.textContent = this.title;
 
         const closeBtn = this.createCloseButton();
@@ -87,13 +90,9 @@ export class Window {
         const closeBtn = document.createElement("button");
         closeBtn.style.cssText = 'float:right; border:none; background:none; cursor:pointer; border-radius:5px';
         closeBtn.innerHTML = CLOSE_ICON;
-        closeBtn.onmouseenter = () => {
-            closeBtn.style.backgroundColor = '#f0f3fa'; // Example hover style
-        }
 
-        closeBtn.onmouseleave = () => {
-            closeBtn.style.backgroundColor = 'white';
-        }
+        buttonHover(closeBtn);
+
         closeBtn.onclick = () => this.close();
         closeBtn.setAttribute('aria-label', 'Close');
 

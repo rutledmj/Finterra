@@ -84,14 +84,14 @@ export class MACD {
         paintAxisLabel(this.signalLine[this.signalLine.length - 1 + Math.min(this.pane.chart.offset, 0)], this.config.style.signal, this.pane);
     }
 
-    dataWindow() {
+    dataWindow(crosshairOffset = 0) {
         if (this.data.length < 1) {
             console.error("Not enough data points to calculate change.");
             return;
         }
 
-        const macd = this.macdLine[this.macdLine.length - 1 + Math.min(this.pane.chart.offset, 0)];
-        const signal = this.signalLine[this.signalLine.length - 1 + Math.min(this.pane.chart.offset, 0)];
+        const macd = this.macdLine[this.macdLine.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
+        const signal = this.signalLine[this.signalLine.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
 
         const wrapper = createElement('div', 'wrapper');
 

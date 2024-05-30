@@ -27,7 +27,7 @@ export class Divider {
         const divider = document.createElement("span");
 
         Object.assign(divider, {
-            style: `height:100%;border-right:1px solid #e0e3eb; padding:5px 0px; margin:auto 4px`
+            style: `height:100%;border-right:1px solid var(--toolbar-border); padding:5px 0px; margin:auto 4px`
         });
 
         this.toolbar.container.appendChild(divider);
@@ -44,4 +44,10 @@ export function createElement(tag, classes = '', styles = {}, attributes = {}) {
         }
     }
     return element;
+}
+
+export function buttonHover(button) {
+    // Add hover effects
+    button.onmouseenter = () => button.style.backgroundColor = 'var(--button-hover)';
+    button.onmouseleave = () => button.style.backgroundColor = 'var(--button-background)';
 }

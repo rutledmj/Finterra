@@ -20,3 +20,36 @@ html {
 body {
     height:100vh
 }
+
+.toolbar-button { fill:var(--color); color:var(--color); padding: 5px 10px; border: none; background-color: var(--button-background) }
+
+:root{
+    --workspace-background:#01223b;
+    --workspace-border:#2a4460;
+
+    --chart-background:#01223b;
+    --chart-border:#2a4460;
+
+    --pane-background:#01223b;
+
+    --axis-background:#01223b;
+
+    --toolbar-background: #01223b;
+    --toolbar-border: #2a4460;
+
+    --menu-background:#013054;
+    --menu-item:#013054;
+    --menu-item-hover:#2a4460;
+    --menu-divider: #2a4460;
+
+    --crosshair-color: #f6f6f6;
+
+    --gridlines: #2a4460;
+
+    --color: #f6f6f6;
+
+    --button-hover: #2a4460;
+    --button-background: #01223b;
+
+    --datawindow: #01223b8c;
+}

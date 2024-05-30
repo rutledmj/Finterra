@@ -81,8 +81,8 @@ export function scaleX(value, startIndex, pane) {
     const barWidth = pane.chart.barWidth;
     const paneWidth = pane.width;
     const barsCount = Math.floor(paneWidth / (barSpacing + barWidth));
-
-    return Math.ceil((value - startIndex) * (pane.chart.barSpacing + pane.chart.barWidth)) - .5;
+    const x = Math.ceil((value - startIndex) * (pane.chart.barSpacing + pane.chart.barWidth)) - .5;
+    return x
 }
 
 export function drawLine(pane, values, color) {
@@ -94,8 +94,8 @@ export function drawLine(pane, values, color) {
     const startIndex = Math.max(0, values.length - barsCount + pane.chart.offset);
     const endIndex = values.length - 1 + pane.chart.offset;
 
-    const ctx = pane.pane.getContext('2d');
-    ctx.lineWidth = 1;
+    const ctx = pane.canvas.getContext('2d');
+    ctx.lineWidth = 2;
     ctx.strokeStyle = color;
     ctx.beginPath();
     let prevX = null, prevY = null;
@@ -124,7 +124,7 @@ export function drawHistogram(pane, values, color) {
     const startIndex = Math.max(0, values.length - barsCount + pane.chart.offset);
     const endIndex = values.length - 1 + pane.chart.offset;
 
-    const ctx = pane.pane.getContext('2d');
+    const ctx = pane.canvas.getContext('2d');
     ctx.beginPath();
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
@@ -144,7 +144,7 @@ export function drawHistogram(pane, values, color) {
 
 export function paintCandles(pane, data, style) {
     const { bodyup, bodydown, borderup, borderdown, wickup, wickdown } = style;
-    const ctx = pane.pane.getContext('2d');
+    const ctx = pane.canvas.getContext('2d');
     ctx.lineWidth = 1;
 
     const barSpacing = pane.chart.barSpacing;
@@ -188,7 +188,7 @@ export function drawHorizontalLine(pane, values, color) {
 
     const paneWidth = pane.width;
 
-    const ctx = pane.pane.getContext('2d');
+    const ctx = pane.canvas.getContext('2d');
     ctx.beginPath();
     ctx.strokeStyle = color;
 
@@ -207,9 +207,9 @@ export function drawVerticalLine(pane, value, data, color) {
     const barsCount = Math.floor(paneWidth / (barSpacing + barWidth));
     const startIndex = Math.max(0, data.length - barsCount + pane.chart.offset);
 
-    const ctx = pane.pane.getContext('2d');
+    const ctx = pane.canvas.getContext('2d');
     ctx.beginPath();
-    ctx.strokeStyle = "#eee";
+    ctx.strokeStyle = color;
     ctx.lineWidth = 1;
 
     const x = scaleX(value, startIndex, pane);

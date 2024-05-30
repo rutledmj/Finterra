@@ -1,5 +1,6 @@
 ﻿import { getContrastingColor, paintAxisLabel, getDataRange, paintCandles } from './StudyBase.js';
 import { createElement } from '../Utils.js';
+import { Crosshair } from '../Charts/crosshair.js';
 export class Price {
     constructor(config, data, pane) {
         this.config = config;
@@ -17,24 +18,24 @@ export class Price {
         paintAxisLabel(this.data[this.data.length - 1 + Math.min(this.pane.chart.offset, 0)]["close"], "#000000", this.pane);
     }
 
-    dataWindow() {
+    dataWindow(crosshairOffset = 0) {
         if (this.data.length < 2) {
             console.error("Not enough data points to calculate change.");
             return;
         }
 
-        const last = this.data[this.data.length - 1 + Math.min(this.pane.chart.offset, 0)];
-        const prev = this.data[this.data.length - 2 + Math.min(this.pane.chart.offset, 0)];
+        const last = this.data[this.data.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
+        const prev = this.data[this.data.length - 2 + Math.min(this.pane.chart.offset - crosshairOffset, 0) ];
 
         const open = last.open.toFixed(2);
         const high = last.high.toFixed(2);
         const low = last.low.toFixed(2);
         const close = last.close.toFixed(2);
 
-        let sign = parseFloat(last.close - prev.close) > 0 ? '+' : '-';
+        let sign = parseFloat(last.close - prev.close) > 0 ? '+' : '';
 
         const change = `${sign}${(last.close - prev.close).toFixed(2)}`;
-        const percentChange = `(${((change / prev.close) * 100).toFixed(2)}%)`;
+        const percentChange = `(${(((last.close - prev.close) / prev.close) * 100).toFixed(2)}%)`;
 
         const wrapper = createElement('div', 'wrapper');
 

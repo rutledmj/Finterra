@@ -66,13 +66,13 @@ export class SimpleMovingAverage {
         paintAxisLabel(value, color, this.pane);
     }
 
-    dataWindow() {
+    dataWindow(crosshairOffset = 0) {
         if (this.data.length < 1) {
             console.error("Not enough data points to calculate change.");
             return;
         }
 
-        const last = this.sma[this.sma.length - 1 + Math.min(this.pane.chart.offset, 0)];
+        const last = this.sma[this.sma.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
         const wrapper = createElement('div', 'wrapper');
 
         const label = createElement('span', '', { fontSize: '13px' });

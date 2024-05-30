@@ -132,14 +132,14 @@ export class StochasticRSI {
         paintAxisLabel(this.dValues[this.dValues.length - 1 + Math.min(this.pane.chart.offset, 0)], this.config.style.d, this.pane);
     }
 
-    dataWindow() {
+    dataWindow(crosshairOffset = 0) {
         if (this.data.length < 1) {
             console.error("Not enough data points to calculate change.");
             return;
         }
 
-        const k = this.kValues[this.kValues.length - 1 + Math.min(this.pane.chart.offset, 0)];
-        const d = this.dValues[this.dValues.length - 1 + Math.min(this.pane.chart.offset, 0)];
+        const k = this.kValues[this.kValues.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
+        const d = this.dValues[this.dValues.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
 
         const wrapper = createElement('div', 'wrapper');
 

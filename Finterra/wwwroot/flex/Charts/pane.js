@@ -1,77 +1,94 @@
 ﻿import { createElement } from '../Utils.js';
 import { Indicators } from '../Studies/Studies.js';
 import { drawHorizontalLine, drawVerticalLine, scaleY } from '../Studies/StudyBase.js';
+import { Crosshair } from './crosshair.js';
+
 export class Pane {
     constructor({ chart, options, width, height, top }) {
         Object.assign(this, { chart, options, width, height, top });
-
         this.min = Infinity;
         this.max = -Infinity;
     }
 
     initialize() {
-        this.container = createElement('div', "pane-container", {
-            width: `${this.chart.workspaceWidth}px`, height: `${this.height}px`,
+        this.container = createElement('div', 'pane-container', {
+            width: `${this.chart.workspaceWidth}px`,
+            height: `${this.height}px`,
             position: 'absolute',
             top: `${this.top}px`,
-            borderBottom: '1px solid #e0e3eb'
+            borderBottom: '1px solid var(--chart-border)',
+            backgroundColor: 'var(--chart-border)'
         });
 
-        this.pane = this.createPane();
+        this.canvas = this.createPane();
+        this.crosshair = this.createCrosshair();
         this.axis = this.createAxis();
         this.dataWindow = this.createDataWindow();
 
-        this.container.append(this.pane, this.axis, this.dataWindow);
+        this.container.append(this.canvas, this.crosshair.canvas, this.axis, this.dataWindow);
     }
 
     createPane() {
-        return createElement('canvas', 'price-pane', { backgroundColor: this.chart.backgroundColor, position: 'absolute', left: '0' }, { height: `${this.height - 1}px`, width: `${this.width}px` });
+        return createElement('canvas', 'price-pane', {
+            backgroundColor: 'var(--pane-background)',
+            position: 'absolute',
+            left: '0'
+        }, {
+            height: `${this.height - 1}px`,
+            width: `${this.width}px`
+        });
+    }
+
+    createCrosshair() {
+        return new Crosshair(this);
     }
 
     createAxis() {
-        return createElement('canvas', 'price-axis', { backgroundColor: this.chart.backgroundColor, position: 'absolute', right: '0', borderLeft: '1px solid #e0e3eb' }, { height: `${this.height - 1}px`, width: `${this.chart.priceAxisWidth}px` });
+        return createElement('canvas', 'price-axis', {
+            backgroundColor: 'var(--axis-background)',
+            position: 'absolute',
+            right: '0',
+            borderLeft: '1px solid var(--chart-border)'
+        }, {
+            height: `${this.height - 1}px`,
+            width: `${this.chart.priceAxisWidth}px`
+        });
     }
 
     createDataWindow() {
-        const dataWindow = createElement('div', 'data-window', {
-            position: 'absolute', top: '4px', left: '4px'
+        return createElement('div', 'data-window', {
+            position: 'absolute',
+            top: '4px',
+            left: '4px',
+            pointerEvents: 'none'
         });
-
-        return dataWindow;
     }
 
-    updateDataWindow() {
+    updateDataWindow(crosshairOffset = 0) {
         this.dataWindow.innerHTML = '';
+
+        const appendDataWindowRow = (indicator) => {
+            const dataWindowRow = indicator.dataWindow(crosshairOffset);
+            dataWindowRow.style.backgroundColor = 'var(--datawindow)';
+            dataWindowRow.style.width = 'fit-content';
+            dataWindowRow.style.color = 'var(--color)';
+            this.dataWindow.appendChild(dataWindowRow);
+        };
+
         if (this.options.price) {
-            const priceClass = Indicators["Price"];
-            if (priceClass) {
-                const dataWindowRow = this.options.price.dataWindow();
-                this.dataWindow.appendChild(dataWindowRow);
-            }
+            appendDataWindowRow(this.options.price);
         }
 
-        if (this.options.overlays)
-            for (let overlay of this.options.overlays) {
-                const indicatorClass = Indicators[overlay.name];
-                if (indicatorClass) {
-
-                    const dataWindowRow = overlay.indicator.dataWindow();
-                    dataWindowRow.style.setProperty('background-color', 'rgba(255, 255, 255, 0.55)');
-                    dataWindowRow.style.setProperty('width', 'fit-content');
-                    this.dataWindow.appendChild(dataWindowRow);
+        const appendRows = (items) => {
+            items.forEach(item => {
+                if (item.indicator) {
+                    appendDataWindowRow(item.indicator);
                 }
-            }
+            });
+        };
 
-        if (this.options.studies)
-            for (let study of this.options.studies) {
-                const indicatorClass = Indicators[study.name];
-                if (indicatorClass) {
-                    const dataWindowRow = study.indicator.dataWindow();
-                    dataWindowRow.style.setProperty('background-color', 'rgba(255, 255, 255, 0.55)');
-                    dataWindowRow.style.setProperty('width', 'fit-content');
-                    this.dataWindow.appendChild(dataWindowRow);
-                }
-            }
+        if (this.options.overlays) appendRows(this.options.overlays);
+        if (this.options.studies) appendRows(this.options.studies);
     }
 
     appendTo(parent) {
@@ -80,77 +97,66 @@ export class Pane {
     }
 
     calculate(data) {
-        if (this.options.overlays)
-            for (let overlay of this.options.overlays) {
-                const indicatorClass = Indicators[overlay.name];
-                if (indicatorClass) {
-                    overlay.indicator = new indicatorClass(overlay, data, this);
+        const calculateIndicators = (items) => {
+            items.forEach(item => {
+                const IndicatorClass = Indicators[item.name];
+                if (IndicatorClass) {
+                    item.indicator = new IndicatorClass(item, data, this);
                 }
-            }
+            });
+        };
 
+        if (this.options.overlays) calculateIndicators(this.options.overlays);
         if (this.options.price) {
-            const priceClass = Indicators["Price"];
-            if (priceClass) {
-                this.options.price = new priceClass(this.options.price, data, this);
+            const PriceClass = Indicators['Price'];
+            if (PriceClass) {
+                this.options.price = new PriceClass(this.options.price, data, this);
             }
         }
-
-        if (this.options.studies)
-            for (let study of this.options.studies) {
-                const indicatorClass = Indicators[study.name];
-                if (indicatorClass) {
-                    study.indicator = new indicatorClass(study, data, this);
-                }
-            }
+        if (this.options.studies) calculateIndicators(this.options.studies);
     }
 
     getDataRange() {
         this.min = Infinity;
         this.max = -Infinity;
 
+        const updateRange = (indicator) => {
+            if (indicator && typeof indicator.getDataRange !== 'undefined') {
+                indicator.getDataRange();
+                this.min = Math.min(indicator.min, this.min);
+                this.max = Math.max(indicator.max, this.max);
+            }
+        };
+
         if (this.options.overlays) {
-            for (let overlay of this.options.overlays) {
-                if (overlay.indicator && typeof overlay.indicator.getDataRange !== 'undefined') {
-                    overlay.indicator.getDataRange();
-                    if (overlay.yscale) {
-                        this.min = Math.min(overlay.indicator.min, this.min);
-                        this.max = Math.max(overlay.indicator.max, this.max);
-                    }
-                }
-            }
+            this.options.overlays.forEach((overlay) => {
+                if (overlay.yscale) updateRange(overlay.indicator)
+            });
         }
-
         if (this.options.studies) {
-            for (let study of this.options.studies) {
-                if (study.indicator && typeof study.indicator.getDataRange !== 'undefined') {
-                    study.indicator.getDataRange();
-                    if (study.yscale) {
-                        this.min = Math.min(study.indicator.min, this.min);
-                        this.max = Math.max(study.indicator.max, this.max);
-                    }
-                }
-            }
+            this.options.studies.forEach(study => updateRange(study.indicator));
         }
-
         if (this.options.price) {
-            console.log(this.max, this.options.price.max);
-            this.options.price.getDataRange();
-            console.log(this.max, this.options.price.max);
-            this.min = Math.min(this.options.price.min, this.min);
-            this.max = Math.max(this.options.price.max, this.max);
-
+            updateRange(this.options.price);
         }
 
-        let buffer = (this.max - this.min) * .05;
+        const buffer = (this.max - this.min) * 0.05;
         this.max += buffer;
         this.min -= buffer;
     }
 
     clear() {
-        let ctx = this.pane.getContext('2d');
-        ctx.clearRect(0, 0, this.pane.width, this.pane.height);
+        this.clearCanvas();
+        this.clearAxis();
+    }
 
-        ctx = this.axis.getContext('2d');
+    clearCanvas() {
+        const ctx = this.canvas.getContext('2d');
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    clearAxis() {
+        const ctx = this.axis.getContext('2d');
         ctx.clearRect(0, 0, this.axis.width, this.axis.height);
     }
 
@@ -158,47 +164,35 @@ export class Pane {
         this.paintHorizontalGrid();
         this.paintVerticalGrid();
 
-        if (this.options.overlays)
-            for (let overlay of this.options.overlays) {
-                if (overlay.indicator && typeof overlay.indicator.paint !== 'undefined') {
-                    overlay.indicator.paint();
+        const paintIndicators = (items) => {
+            items.forEach(item => {
+                if (item.indicator && typeof item.indicator.paint !== 'undefined') {
+                    item.indicator.paint();
                 }
-            }
+            });
+        };
 
-        if (this.options.price) {
-            this.options.price.paint();
-        }
-
-        if (this.options.studies)
-            for (let study of this.options.studies) {
-                if (study.indicator && typeof study.indicator.paint !== 'undefined') {
-                    study.indicator.paint();
-                }
-            }
+        if (this.options.overlays) paintIndicators(this.options.overlays);
+        if (this.options.price) this.options.price.paint();
+        if (this.options.studies) paintIndicators(this.options.studies);
     }
 
     paintAxis() {
-
         this.paintAxisTicks();
 
-        if (this.options.overlays)
-            for (let overlay of this.options.overlays) {
-                if (overlay.indicator && typeof overlay.indicator.paintAxis !== 'undefined') {
-                    overlay.indicator.paintAxis();
+        const paintIndicatorAxes = (items) => {
+            items.forEach(item => {
+                if (item.indicator && typeof item.indicator.paintAxis !== 'undefined') {
+                    item.indicator.paintAxis();
                 }
-            }
+            });
+        };
 
+        if (this.options.overlays) paintIndicatorAxes(this.options.overlays);
         if (this.options.price && typeof this.options.price.paintAxis !== 'undefined') {
             this.options.price.paintAxis();
         }
-
-
-        if (this.options.studies)
-            for (let study of this.options.studies) {
-                if (study.indicator && typeof study.indicator.paint !== 'undefined') {
-                    study.indicator.paintAxis();
-                }
-            }
+        if (this.options.studies) paintIndicatorAxes(this.options.studies);
     }
 
     paintAxisTicks() {
@@ -234,7 +228,6 @@ export class Pane {
 
         for (let value = minTick; value <= maxTick; value += interval) {
             const y = scaleY(value, this);
-
             ctx.fillText(value.toFixed(2), width / 2, y);
             ctx.moveTo(0, y);
             ctx.lineTo(5, y);
@@ -243,8 +236,6 @@ export class Pane {
 
         ctx.closePath();
     }
-
-    paintCrosshairs() { }
 
     paintHorizontalGrid() {
         const range = this.max - this.min;
@@ -267,25 +258,18 @@ export class Pane {
         const maxTick = Math.floor(this.max / interval) * interval;
 
         for (let value = minTick; value <= maxTick; value += interval) {
-            drawHorizontalLine(this, value, "#eee");
+            drawHorizontalLine(this, value, "#01313b");
         }
     }
 
     paintVerticalGrid() {
-        
         const data = this.chart.data;
         const ticks = this.chart.timeAxis.ticks;
 
-        const ctx = this.pane.getContext('2d');
-        ctx.beginPath();
-        ctx.strokeStyle = "#eee";
-        ctx.lineWidth = 1;
-
         ticks.forEach(tick => {
-            drawVerticalLine(this, tick.index, data, "#eee");
+            drawVerticalLine(this, tick.index, data, "#01313b");
         });
 
         this.ticks = ticks;
-        
     }
 }

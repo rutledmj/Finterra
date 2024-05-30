@@ -20,7 +20,7 @@ export class Flex {
         console.log(this);
 
         Object.assign(this.container, {
-            style: 'height:100vh; position:relative; border-radius:2px; border:1px solid #e0e3eb; background-color:#e0e3eb'
+            style: 'height:100vh; position:relative; border-radius:2px; border:1px solid var(--workspace-border); background-color:var(--toolbar-border)'
         });
 
         await this.initializeStreamer();
@@ -76,8 +76,6 @@ export class Flex {
                 Account,
                 Divider,
                 SymbolSearch,
-                Divider,
-                NewChart,
                 Divider,
                 AlertManager,
                 Divider,

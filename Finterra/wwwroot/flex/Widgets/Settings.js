@@ -1,4 +1,4 @@
-﻿import { createSpan } from '../Utils.js'
+﻿import { createSpan, createElement, buttonHover } from '../Utils.js'
 import { SETTINGS_ICON } from '../Utils/Icons.js'
 
 export class Settings {
@@ -13,17 +13,11 @@ export class Settings {
     }
 
     createButton() {
-        const button = document.createElement('button');
-        button.style.cssText = "height: 100%; padding: 5px 10px; border: none; background-color: white; text-align: left; float:right";
+        const button = createElement('button', 'toolbar-button');
+        button.style.float = 'right';
 
         // Add hover effects
-        button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = '#f0f3fa'; // Example hover style
-        });
-
-        button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = 'white';
-        });
+        buttonHover(button);
 
         button.onclick = () => {
             this.onClickEvent();

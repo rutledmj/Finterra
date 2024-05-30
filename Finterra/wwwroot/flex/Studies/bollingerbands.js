@@ -88,15 +88,15 @@ export class BollingerBands {
         paintAxisLabel(middle, this.config.style.middle, this.pane);
     }
 
-    dataWindow() {
+    dataWindow(crosshairOffset = 0) {
         if (this.data.length < 1) {
             console.error("Not enough data points to calculate change.");
             return;
         }
 
-        const upper = this.upperBand[this.upperBand.length - 1 + Math.min(this.pane.chart.offset, 0)];
-        const lower = this.lowerBand[this.lowerBand.length - 1 + Math.min(this.pane.chart.offset, 0)];
-        const middle = this.middleBand[this.middleBand.length - 1 + Math.min(this.pane.chart.offset, 0)];
+        const upper = this.upperBand[this.upperBand.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
+        const lower = this.lowerBand[this.lowerBand.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
+        const middle = this.middleBand[this.middleBand.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
 
         const wrapper = createElement('div', 'wrapper');
 

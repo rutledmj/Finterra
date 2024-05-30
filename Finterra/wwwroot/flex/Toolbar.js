@@ -49,7 +49,7 @@
 
     getToolbarStyles() {
         const commonStyles = {
-            backgroundColor: 'white',
+            backgroundColor: 'var(--toolbar-background)',
             position: 'absolute',
             padding:'2px'
         };

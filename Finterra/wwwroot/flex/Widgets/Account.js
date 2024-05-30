@@ -1,4 +1,4 @@
-﻿import { createSpan, Menu } from '../Utils.js'
+﻿import { createSpan, Menu, buttonHover, createElement } from '../Utils.js'
 import { MENU_ICON, HOME_ICON, HELP_ICON, NOTIFICATION_ICON, NEW_ICON, SIGNOUT_ICON } from '../Utils/Icons.js';
 
 export class Account {
@@ -15,17 +15,9 @@ export class Account {
     }
 
     createButton() {
-        const button = document.createElement('button');
-        button.style.cssText = "height: 100%; padding: 5px 10px; border: none; background-color: white; text-align: left";
+        const button = createElement('button', 'toolbar-button');
 
-        // Add hover effects
-        button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = '#f0f3fa'; // Example hover style
-        });
-
-        button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = 'white';
-        });
+        buttonHover(button);
 
         button.onclick = () => {
             this.onClickEvent();
@@ -39,7 +31,7 @@ export class Account {
     }
 
     onClickEvent() {
-        const left = this.button.clientWidth + this.button.clientLeft;
+        const left = this.button.clientWidth + this.button.offsetLeft;
         const top = this.button.clientTop;
 
         const menu = new Menu({

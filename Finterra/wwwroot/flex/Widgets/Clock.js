@@ -1,4 +1,4 @@
-﻿import { createSpan } from '../Utils.js'
+﻿import { createSpan, createElement, buttonHover } from '../Utils.js'
 
 export class Clock {
     constructor(options) {
@@ -13,16 +13,11 @@ export class Clock {
     }
 
     createButton() {
-        const button = document.createElement('button');
-        button.style.cssText = "height: 100%; padding: 5px 10px; border: none; background-color: white; text-align: left; float:right";
+        const button = createElement('button', 'toolbar-button');
+        button.style.float = "right";
 
-        button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = '#f0f3fa';
-        });
-
-        button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = 'white';
-        });
+        // Add hover effects
+        buttonHover(button);
 
         this.clockSpan = createSpan('');
         button.appendChild(this.clockSpan);

@@ -19,6 +19,7 @@ export class TimeAxis {
         };
         this.spans = this.initializeSpans();
         this.createAxis('date-axis', chart.workspaceWidth - chart.priceAxisWidth, chart.dateAxisHeight, { bottom: 0, left: 0, position: 'absolute' });
+        this.createCrosshairAxis('date-axis', chart.workspaceWidth - chart.priceAxisWidth, chart.dateAxisHeight, { bottom: 0, left: 0, position: 'absolute' });
     }
 
     initializeSpans() {
@@ -36,9 +37,15 @@ export class TimeAxis {
     }
 
     createAxis(className, width, height, style = {}) {
-        const axis = createElement('canvas', className, { backgroundColor: 'transparent', ...style }, { height: `${height}px`, width: `${width}px` });
+        const axis = createElement('canvas', className, { backgroundColor: 'var(--axis-background)', ...style }, { height: `${height}px`, width: `${width}px` });
         this.chart.chartWrapper.appendChild(axis);
         this.canvas = axis;
+    }
+
+    createCrosshairAxis(className, width, height, style = {}) {
+        const axis = createElement('canvas', className, { backgroundColor: 'transparent', ...style }, { height: `${height}px`, width: `${width}px` });
+        this.chart.chartWrapper.appendChild(axis);
+        this.crosshairCanvas = axis;
     }
 
     clear() {
@@ -53,7 +60,7 @@ export class TimeAxis {
         const { barSpacing, barWidth } = this.chart;
         const paneWidth = this.canvas.width;
         const barsCount = Math.floor(paneWidth / (barSpacing + barWidth));
-        const startIndex = Math.max(0, data.length - barsCount);
+        const startIndex = Math.max(0, data.length - barsCount + this.chart.offset);
         const endIndex = data.length - 1;
         const ticks = this.getTicks(data);
 
@@ -62,7 +69,7 @@ export class TimeAxis {
             ctx.font = "12px Arial";
             ctx.textBaseline = "middle";
             ctx.textAlign = "center";
-            ctx.fillStyle = "black";
+            ctx.fillStyle = "#aaa";
             ctx.fillText(tick.display, x, this.canvas.height / 2);
         });
 

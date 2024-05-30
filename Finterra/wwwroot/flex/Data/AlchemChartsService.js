@@ -10,7 +10,9 @@
         this.ExitPingCode = "login521423";
         this.PingCode = "ping565241";
         this.Version = "AM_0.0.23";
-        this.AlchemChartsRoot = "http://66.219.105.92:443";
+        this.AlchemChartsRoot =
+            "http://66.219.105.92:443";
+            //"http://server1.infodys.com:443";
         this.IndexCSV = "/indexCSV.aspx";
         this.IndexTS = "/indexTS.aspx";
     }

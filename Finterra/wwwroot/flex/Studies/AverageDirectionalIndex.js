@@ -152,14 +152,14 @@ export class ADX {
         paintAxisLabel(minusDi, this.config.style.minusdi, this.pane);
     }
 
-    dataWindow() {
+    dataWindow(crosshairOffset = 0) {
         if (this.data.length < 1) {
             console.error("Not enough data points to calculate change.");
             return;
         }
 
-        const plusDi = this.plusDI[this.plusDI.length - 1 + Math.min(this.pane.chart.offset, 0)];
-        const minusDi = this.minusDI[this.minusDI.length - 1 + Math.min(this.pane.chart.offset, 0)];
+        const plusDi = this.plusDI[this.plusDI.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
+        const minusDi = this.minusDI[this.minusDI.length - 1 + Math.min(this.pane.chart.offset - crosshairOffset, 0)];
 
         const wrapper = createElement('div', 'wrapper');
 
@@ -182,9 +182,6 @@ export class ADX {
     }
 
     getDataRange() {
-
-        this.min = Infinity;
-        this.max = -Infinity;
 
         const minmax = getDataRange(this.pane, [this.plusDI, this.minusDI]);
         this.min = minmax.min;

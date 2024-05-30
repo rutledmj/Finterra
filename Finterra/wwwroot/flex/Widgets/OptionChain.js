@@ -1,4 +1,4 @@
-﻿import { createDiv } from '../Utils.js';
+﻿import { createDiv, createElement, buttonHover } from '../Utils.js';
 import { OPTION_CHAIN_ICON } from '../Utils/Icons.js';
 
 export class OptionChain {
@@ -13,17 +13,11 @@ export class OptionChain {
     }
 
     createButton() {
-        const button = document.createElement('button');
-        button.style.cssText = "width: 100%; padding: 5px 10px; border: none; background-color: white;";
+        const button = createElement('button', 'toolbar-button');
+        button.style.width = "100%";
 
         // Add hover effects
-        button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = '#f0f3fa'; // Example hover style
-        });
-
-        button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = 'white';
-        });
+        buttonHover(button);
 
         button.onclick = () => {
             this.onClickEvent();

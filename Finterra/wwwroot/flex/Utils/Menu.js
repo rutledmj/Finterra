@@ -1,8 +1,12 @@
-﻿export class Menu {
+﻿import { createElement, buttonHover } from "../Utils.js";
+
+export class Menu {
     constructor(options) {
         this.top = options.top || 0;
         this.left = options.left || 0;
         this.items = options.items || null;
+
+        this.trigger = options.trigger;
 
         this.handleClickAway = this.handleClickAway.bind(this);
 
@@ -25,9 +29,11 @@
                 z-index:100;
                 top:${this.top}px; 
                 left:${this.left}px;
-                background-color:white;
+                background-color: var(--menu-background);
                 height:0;
-                overflow:hidden
+                overflow:hidden;
+                color:var(--color);
+                fill:var(--color);
                 `
         });
 
@@ -71,7 +77,7 @@
         const div = document.createElement('div');
         if (item.type === "Divider") {
             Object.assign(div.style, {
-                borderBottom: '1px solid #e0e3eb',
+                borderBottom: '1px solid var(--menu-divider)',
                 height: '1px',
                 margin: '8px 0'
             });
@@ -82,24 +88,49 @@
                 padding: '8px 16px',
                 cursor: 'pointer'
             });
-            div.onmouseenter = () => div.style.backgroundColor = '#f0f3fa';
-            div.onmouseleave = () => div.style.backgroundColor = 'white';
 
-            const iconSpan = this.createSpan(item.icon, {
-                width: '21px',
-                display: 'inline-block',
-                textAlign: 'center'
-            });
-            const textSpan = this.createSpan(item.name, {
-                paddingLeft: '16px'
-            });
+            div.onmouseenter = () => div.style.backgroundColor = 'var(--menu-item-hover)';
+            div.onmouseleave = () => div.style.backgroundColor = 'var(--menu-item)';
 
-            div.appendChild(iconSpan);
-            div.appendChild(textSpan);
+            if (item.icon) {
+                const iconSpan = this.createSpan(item.icon, {
+                    width: '21px',
+                    display: 'inline-block',
+                    textAlign: 'center'
+                });
+
+                div.appendChild(iconSpan);
+            }
+
+            if (item.name) {
+                const textSpan = this.createSpan(item.name, {
+                    paddingLeft: '16px'
+                });
+
+                div.appendChild(textSpan);
+            }
+
+            if (item.buttons) {
+                div.style.padding = '0px 16px';
+                item.buttons.forEach((btn) => {
+                    var button = createElement('button', '', {
+                        fill: 'var(--color)',
+                        color: 'var(--color)', padding: '5px 10px', border: 'none', backgroundColor: 'transparent'
+                    });
+
+                    var iconSpan = this.createSpan(btn.icon);
+                    button.appendChild(iconSpan);
+
+                    div.appendChild(button);
+
+                    button.onclick = () => {
+                        this.trigger.clicked(btn);
+                    };
+                });
+            }
 
             this.menuHeight += 40;
         }
-        console.log(this.menuHeight);
         return div;
     }
 
