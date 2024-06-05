@@ -3,6 +3,9 @@
 export class TimeAxis {
     constructor(chart) {
         this.chart = chart;
+
+        this.height = 28;
+
         this.format = {
             Year: "yyyy",
             Month: "MMM",
@@ -18,8 +21,20 @@ export class TimeAxis {
             Hour: 'Hour',
         };
         this.spans = this.initializeSpans();
-        this.createAxis('date-axis', chart.workspaceWidth - chart.priceAxisWidth, chart.dateAxisHeight, { bottom: 0, left: 0, position: 'absolute' });
-        this.createCrosshairAxis('date-axis', chart.workspaceWidth - chart.priceAxisWidth, chart.dateAxisHeight, { bottom: 0, left: 0, position: 'absolute' });
+
+        this.container = createElement('div', 'time-axis', {
+            position: 'relative',
+            width: '100%',
+            height: `${this.height}px`
+        });
+
+        this.chart.container.appendChild(this.container);
+
+        this.canvas = this.createAxis('date-axis', this.container.clientWidth - chart.priceAxisWidth, this.height, { bottom: 0, left: 0, position: 'absolute' });
+        this.crosshairCanvas = this.createCrosshairAxis('date-axis', this.container.clientWidth - chart.priceAxisWidth, this.height, { bottom: 0, left: 0, position: 'absolute' });
+
+        this.container.append(this.canvas, this.crosshairCanvas);
+        
     }
 
     initializeSpans() {
@@ -38,14 +53,12 @@ export class TimeAxis {
 
     createAxis(className, width, height, style = {}) {
         const axis = createElement('canvas', className, { backgroundColor: 'var(--axis-background)', ...style }, { height: `${height}px`, width: `${width}px` });
-        this.chart.chartWrapper.appendChild(axis);
-        this.canvas = axis;
+        return axis;
     }
 
     createCrosshairAxis(className, width, height, style = {}) {
         const axis = createElement('canvas', className, { backgroundColor: 'transparent', ...style }, { height: `${height}px`, width: `${width}px` });
-        this.chart.chartWrapper.appendChild(axis);
-        this.crosshairCanvas = axis;
+        return axis;
     }
 
     clear() {

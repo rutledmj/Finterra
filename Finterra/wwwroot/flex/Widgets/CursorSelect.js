@@ -12,7 +12,7 @@ export class CursorSelect {
     }
 
     createButton() {
-        const button = createElement('button', 'toolbar-button');
+        const button = createElement('button', 'toolbar-button', { width: '100%'});
 
         // Add hover effects
         buttonHover(button);

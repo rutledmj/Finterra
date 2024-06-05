@@ -19,11 +19,14 @@ export class Crosshair {
 
     onMouseMove() {
         this.canvas.onmousemove = (e) => {
-            this.drawVerticalLine(e);
-            this.drawHorizontalLine(e);
-            this.drawAxisLabel(e);
-            this.drawDateLabel(e);
-            this.updateDataWindow(e);
+
+            if (this.pane.chart.data) {
+                this.drawVerticalLine(e);
+                this.drawHorizontalLine(e);
+                this.drawAxisLabel(e);
+                this.drawDateLabel(e);
+                this.updateDataWindow(e);
+            }
         };
 
         this.canvas.onmouseout = (e) => {

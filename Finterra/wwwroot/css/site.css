@@ -21,11 +21,19 @@ body {
     height:100vh
 }
 
-.toolbar-button { fill:var(--color); color:var(--color); padding: 5px 10px; border: none; background-color: var(--button-background) }
+.toolbar-button { 
+    fill:var(--color); 
+    color:var(--color); 
+    padding: 5px 10px; 
+    border: none; 
+    background-color: var(--button-background); 
+    border-radius:4px
+
+}
 
 :root{
     --workspace-background:#01223b;
-    --workspace-border:#2a4460;
+    --workspace-border:#01223b;
 
     --chart-background:#01223b;
     --chart-border:#2a4460;

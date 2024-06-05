@@ -114,12 +114,10 @@ export class Menu {
                 div.style.padding = '0px 16px';
                 item.buttons.forEach((btn) => {
                     var button = createElement('button', '', {
-                        fill: 'var(--color)',
-                        color: 'var(--color)', padding: '5px 10px', border: 'none', backgroundColor: 'transparent'
+                        fill: 'var(--color)', color: 'var(--color)', padding: '5px 10px', border: 'none', backgroundColor: 'transparent'
                     });
 
-                    var iconSpan = this.createSpan(btn.icon);
-                    button.appendChild(iconSpan);
+                    button.innerHTML = btn.icon;
 
                     div.appendChild(button);
 

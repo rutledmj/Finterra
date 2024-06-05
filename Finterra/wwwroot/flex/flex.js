@@ -1,6 +1,6 @@
 ﻿import { Toolbar } from './Toolbar.js';
 import { SymbolSearch, Account, NewChart, AlertManager, Layout, Settings, Clock, ServerToggle, CursorSelect, DrawingTool, TextTool, Watchlist, OptionChain, Hotlist, News, Calendar, Scanner, GoToDate } from './Widgets.js';
-import { Divider, Interval } from './Utils.js'
+import { Divider, Interval, createElement } from './Utils.js'
 import { QuotemediaService } from './Data/QuotemediaService.js';
 import { Workspace } from './Workspace.js';
 import { AlchemChartsService } from './Data/AlchemChartsService.js';
@@ -50,6 +50,7 @@ export class Flex {
     }
 
     async initializeChart() {
+
         console.log(this.workspace.charts);
         for (let chart of this.workspace.charts) {
             
@@ -67,11 +68,63 @@ export class Flex {
     }
 
     async initializeLayout() {
+
+        this.container.style.display = 'flex';
+        this.container.style.flexDirection = 'column';
+
+        const header = createElement('div', 'header', {
+            width: '100%',
+            paddingBottom: '4px'
+        });
+
+        const mainContent = createElement('div', 'main-content', {
+            width: '100%',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'row'
+        });
+
+        const sidebarLeft = createElement('div', 'sidebar-left', {
+            width: 'min-content',
+            height: '100%',
+            paddingRight: '4px',
+        });
+
+        const contentArea = createElement('div', 'content-area', {
+            height: '100%',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column'
+        });
+
+        const sidebarRight = createElement('div', 'sidebar-right', {
+            width: 'min-content',
+            height: '100%',
+            paddingLeft: '4px'
+        });
+
+        const workspace = createElement('div', 'workspace', {
+            width: '100%',
+            flex: 1
+        });
+
+        const footer = createElement('div', 'footer', {
+            width: '100%',
+            paddingTop: '4px'
+            
+        });
+
+        contentArea.append(workspace, footer);
+
+        mainContent.append(sidebarLeft, contentArea, sidebarRight);
+
+        this.container.append(header, mainContent);
+
+        
         // Creating the top, middle, and bottom toolbars
         this.topToolbar = new Toolbar({
             flex: this,
-            parent: this.container,
-            position: 'top',
+            container: header,
             widgets: [
                 Account,
                 Divider,
@@ -84,24 +137,20 @@ export class Flex {
                 GoToDate,
                 Settings,
             ]
-        });
-
-        this.workspace = new Workspace({
-            flex: this, parent: this.container
-        });
+        });        
 
         this.bottomToolbar = new Toolbar({
-            flex: this, parent: this.container,
-            position: 'bottom',
+            flex: this,
+            container: footer,
             widgets: [
                 Clock,
                 ServerToggle
             ]
         });
-
+        
         this.leftToolbar = new Toolbar({
-            flex: this, parent: this.container,
-            position: 'left', 
+            flex: this,
+            container: sidebarLeft,
             widgets: [
                 CursorSelect,
                 DrawingTool,
@@ -110,8 +159,8 @@ export class Flex {
         });
 
         this.rightToolbar = new Toolbar({
-            flex: this, parent: this.container,
-            position: 'right', 
+            flex: this,
+            container: sidebarRight,
             widgets: [
                 Watchlist,
                 OptionChain,
@@ -122,5 +171,9 @@ export class Flex {
             ]
         });
 
+        this.workspace = new Workspace({
+            flex: this,
+            container: workspace
+        });
     }
 }

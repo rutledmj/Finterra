@@ -1,12 +1,12 @@
 ﻿import { Chart } from './Charts/chart.js';
-import { Interval } from './Utils.js'
+import { Interval, createElement } from './Utils.js'
 
 export class Workspace {
     constructor(options) {
         this.flex = options.flex;
         this.position = options.position;
         this.style = options.style;
-        this.parent = options.parent;
+        this.parent = options.container;
 
         this.initialize();
     }
@@ -30,7 +30,7 @@ export class Workspace {
     }
 
     createWorkspace() {
-        let div = document.createElement('div');
+        let div = createElement('div', '', { border: '1px solid var(--workspace-border)'});
         div.className = `flex-workspace`;
 
         const styles = this.getToolbarStyles();
@@ -40,21 +40,11 @@ export class Workspace {
     }
 
     getToolbarStyles() {
-        const commonStyles = {
-            backgroundColor: 'white',
-            position: 'absolute',
-        };
-
-        const width = this.flex.container.clientWidth;
-        const height = this.flex.container.clientHeight;
-
         return {
-            ...commonStyles,
-            top: `${this.height + this.padding}px`,
-            left: `${this.width + this.padding}px`,
-            width: `${this.flex.container.clientWidth - (this.width * 2) - (this.padding * 2)}px`,
-            height: `${this.flex.container.clientHeight - (this.height * 2) - (this.padding * 2)}px`,
-            borderRadius: '3px'
+            backgroundColor: 'transparent',
+            width: '100%',
+            height: '100%',
+            borderRadius: '4px'
         };
     }
 }

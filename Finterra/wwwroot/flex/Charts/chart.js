@@ -6,10 +6,6 @@ export class Chart {
     constructor({ symbol, interval, depth, workspace }) {
         Object.assign(this, { symbol, interval, depth, workspace });
 
-        this.workspaceHeight = this.workspace.container.clientHeight;
-        this.workspaceWidth = this.workspace.container.clientWidth;
-        this.workspaceContainer = this.workspace.container;
-
         this.dateAxisHeight = 28;
         this.priceAxisWidth = 60;
 
@@ -25,24 +21,43 @@ export class Chart {
     }
 
     initialize() {
-        this.chartWrapper = createElement('div', 'chart-wrapper', {
-            width: `${this.workspaceWidth}px`,
-            height: `${this.workspaceHeight}px`,
+        this.container = createElement('div', 'chart-wrapper', {
+            width: `100%`,
+            height: `100%`,
             backgroundColor: 'var(--chart-background)',
-            position: 'relative'
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
         });
+
+        this.workspace.container.appendChild(this.container);
 
         this.onWheelScroll();
         this.onKeyPress();
+        this.onResize();
 
-        this.timeAxis = new TimeAxis(this);
         this.createPanes();
 
-        this.workspaceContainer.appendChild(this.chartWrapper);
+        this.timeAxis = new TimeAxis(this);
+    }
+
+    onResize() {
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                // Handle the resize event
+                console.log(this.panes);
+
+                console.log('Element resized:', entry.target);
+                console.log('New width:', entry.contentRect.width);
+                console.log('New height:', entry.contentRect.height);
+            }
+        });
+
+        //resizeObserver.observe(this.chartWrapper);
     }
 
     onWheelScroll() {
-        this.chartWrapper.onwheel = (e) => {
+        this.container.onwheel = (e) => {
             e.preventDefault();
 
             this.barSpacing = Math.max(Math.sign(-e.deltaY) + this.barSpacing, 1);
@@ -111,29 +126,28 @@ export class Chart {
     createPanes() {
 
         const paneCount = this.panesJSON.length + 1;
-        const paneHeight = (this.workspaceHeight - this.dateAxisHeight) / paneCount;
-        const paneWidth = this.workspaceWidth - this.priceAxisWidth;
+        const paneHeight = (this.workspace.container.clientHeight - this.dateAxisHeight) / paneCount;
+        const paneWidth = this.workspace.container.clientWidth - this.priceAxisWidth;
 
         this.panes = [];
 
         // Create and add the price pane first
-        this.addPane(this.pricePane, paneWidth, paneHeight, 0);
+        this.addPane(this.pricePane, paneWidth, paneHeight);
 
         // Create and add additional panes based on panesJSON
         this.panesJSON.forEach((paneConfig, idx) => {
-            this.addPane(paneConfig, paneWidth, paneHeight, paneHeight * (idx + 1));
+            this.addPane(paneConfig, paneWidth, paneHeight);
         });
 
-        this.panes.forEach(pane => pane.appendTo(this.chartWrapper));
+        //this.panes.forEach(pane => pane.appendTo(this.container));
     }
 
-    addPane(options, width, height, top) {
+    addPane(options, width, height, top, paneCount) {
         const paneOptions = {
             chart: this,
             options, // Assuming Pane constructor is adapted to accept these options
             height,
             width,
-            top
         };
         this.panes.push(new Pane(paneOptions));
     }
@@ -170,7 +184,8 @@ export class Chart {
                     source: 'close'
                 },
                 style: {
-                    color: '#ff0000'
+                    color: '#ff0000',
+                    thickness: 2
                 },
                 yscale: false
             },
@@ -354,8 +369,8 @@ export class Chart {
                     style: {
                         macd: 'red',
                         signal: 'lime',
-                        histogram: 'black',
-                        zeroline: 'black'
+                        histogram: 'teal',
+                        zeroline: 'teal'
                     },
                     yscale: true
                 }]

@@ -4,21 +4,25 @@ import { drawHorizontalLine, drawVerticalLine, scaleY } from '../Studies/StudyBa
 import { Crosshair } from './crosshair.js';
 
 export class Pane {
-    constructor({ chart, options, width, height, top }) {
-        Object.assign(this, { chart, options, width, height, top });
+    constructor({ chart, options, width, height }) {
+        Object.assign(this, { chart, options, width, height });
+
         this.min = Infinity;
         this.max = -Infinity;
+
+        this.initialize();
     }
 
     initialize() {
         this.container = createElement('div', 'pane-container', {
-            width: `${this.chart.workspaceWidth}px`,
+            width: '100%',
             height: `${this.height}px`,
-            position: 'absolute',
-            top: `${this.top}px`,
-            borderBottom: '1px solid var(--chart-border)',
-            backgroundColor: 'var(--chart-border)'
+            borderBottom: '4px solid var(--chart-border)',
+            backgroundColor: 'var(--chart-border)',
+            position: 'relative'
         });
+
+        this.chart.container.appendChild(this.container);
 
         this.canvas = this.createPane();
         this.crosshair = this.createCrosshair();
