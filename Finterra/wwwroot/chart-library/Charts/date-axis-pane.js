@@ -13,6 +13,8 @@ export class DateAxisPane {
         this.stockData = options.stockData || [];
         this.desiredTimeTicks = options.desiredTimeTicks || 5;
 
+        this.scrollIndex = 0;
+
         this.canvas = null;
         this.context = null;
         this.initialize();
@@ -45,27 +47,43 @@ export class DateAxisPane {
         this.render();
     }
 
+    // Called by Chart when zoom changes
+    setBarSize(newBarWidth, newBarSpacing) {
+        this.barWidth = newBarWidth;
+        this.barSpacing = newBarSpacing;
+        // re-render
+        this.render();
+    }
+
+    setScrollIndex(newScrollIndex) {
+        this.scrollIndex = newScrollIndex;
+        this.render();
+    }
+
     render() {
         const ctx = this.context;
         if (!ctx) return;
         ctx.clearRect(0, 0, this.width, this.height);
 
         const totalBars = this.stockData.length;
-        if (totalBars === 0) return;
+        if (!totalBars) return;
 
         const candleSpace = this.barWidth + this.barSpacing;
         const maxVisible = Math.floor(this.width / candleSpace);
         const visibleBars = Math.min(totalBars, maxVisible);
         if (visibleBars <= 0) return;
 
-        const startIndex = totalBars - visibleBars;
-        const endIndex = totalBars - 1;
+        let rightMostIndex = totalBars - 1 - this.scrollIndex;
+        if (rightMostIndex < 0) rightMostIndex = 0;
 
-        // Use Chart.computeDateTicks() to find date ticks
+        let startIndex = rightMostIndex - (visibleBars - 1);
+        if (startIndex < 0) startIndex = 0;
+
+        // Now get date ticks from the Chart
         const ticks = Chart.computeDateTicks(
             this.stockData,
             startIndex,
-            endIndex,
+            rightMostIndex,
             this.width,
             this.barWidth,
             this.barSpacing,
@@ -73,7 +91,6 @@ export class DateAxisPane {
             this.desiredTimeTicks
         );
 
-        // Draw small ticks & labels
         ctx.strokeStyle = '#666';
         ctx.fillStyle = '#ccc';
         ctx.font = '12px sans-serif';
@@ -81,15 +98,13 @@ export class DateAxisPane {
         ctx.textBaseline = 'middle';
 
         for (const tick of ticks) {
-            const xPos = tick.x;
-            // short vertical line
             ctx.beginPath();
-            ctx.moveTo(xPos, 0);
-            ctx.lineTo(xPos, 4);
+            ctx.moveTo(tick.x, 0);
+            ctx.lineTo(tick.x, 4);
             ctx.stroke();
 
-            // label in middle of axis
-            ctx.fillText(tick.label, xPos, this.height / 2);
+            ctx.fillText(tick.label, tick.x, this.height / 2);
         }
     }
+
 }

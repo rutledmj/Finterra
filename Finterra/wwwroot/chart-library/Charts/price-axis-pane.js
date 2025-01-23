@@ -11,6 +11,7 @@ export class PriceAxisPane {
         this.offset = options.offset || 0;
         this.mainChartWidth = options.mainChartWidth || 300;
         this.stockData = options.stockData || [];
+        this.scrollIndex = 0;
 
         this.canvas = null;
         this.context = null;
@@ -40,6 +41,19 @@ export class PriceAxisPane {
         this.render();
     }
 
+    setScrollIndex(newScrollIndex) {
+        this.scrollIndex = newScrollIndex;
+        this.render();
+    }
+
+    // Called by Chart when zoom changes
+    setBarSize(newBarWidth, newBarSpacing) {
+        this.barWidth = newBarWidth;
+        this.barSpacing = newBarSpacing;
+        // re-render
+        this.render();
+    }
+
     render() {
         const ctx = this.context;
         if (!ctx) return;
@@ -53,7 +67,10 @@ export class PriceAxisPane {
         const visibleBars = Math.min(totalBars, maxVisible);
         if (visibleBars <= 0) return;
 
-        const startIndex = totalBars - visibleBars;
+        let rightMostIndex = totalBars - 1 - this.scrollIndex;
+        if (rightMostIndex < 0) rightMostIndex = 0;
+
+        const startIndex = rightMostIndex - (visibleBars - 1);
         const endIndex = totalBars - 1;
 
         let minPrice = Number.MAX_VALUE;

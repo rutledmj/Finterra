@@ -47,6 +47,8 @@ export class NewChart {
             isMaximizable: true,
             isCloseable: true,
             isBackdrop: false,
+            isMinimizable: true,
+            isRestorable:true,
             width: 840,
             height: 680,
             container: workspace

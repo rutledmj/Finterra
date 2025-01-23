@@ -35,6 +35,7 @@ export class Chart extends Window {
         this.barSpacing = options.barSpacing || 2;
         this.offset = options.offset || 10;
         this.numPanes = options.panes || 1;
+        this.scrollIndex = 0;
 
         // Data arrays
         this.rawData = [];
@@ -58,6 +59,9 @@ export class Chart extends Window {
 
         // 2) Build the chart layout (panes, date axis)
         this.initChartLayout(bodyWidth, bodyHeight);
+
+        this.body.addEventListener('wheel', (ev) => this.handleWheel(ev), { passive: false });
+        window.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
         // 3) Fetch data and render
         this.fetchAndRender();
@@ -201,6 +205,102 @@ export class Chart extends Window {
             currentDate.setDate(currentDate.getDate() + 1);
         }
         return data;
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //   KEYBOARD HANDLER: ARROW LEFT / ARROW RIGHT
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    handleKeyDown(e) {
+        switch (e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                this.panLeft();
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                this.panRight();
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Move the chart "one bar" or "one interval" to the left.
+     * Meaning show an older bar on the right edge.
+     */
+    panLeft() {
+        // For demonstration, let's define "one interval" = 1 bar:
+        this.scrollIndex++;
+
+        // Update all panes & date-axis
+        this.updateScrollIndexOnAll();
+    }
+
+    /**
+     * Move chart "one bar" to the right
+     */
+    panRight() {
+        // Can't scroll beyond 0 (the newest bar at right edge).
+        if (this.scrollIndex > 0) {
+            this.scrollIndex--;
+        }
+        this.updateScrollIndexOnAll();
+    }
+
+    /**
+     * Pass the new scrollIndex to all panes and date-axis,
+     * then re-render them so they shift their visible subset.
+     */
+    updateScrollIndexOnAll() {
+        for (const pane of this.panes) {
+            pane.setScrollIndex(this.scrollIndex);
+        }
+        if (this.dateAxisPane) {
+            this.dateAxisPane.setScrollIndex(this.scrollIndex);
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //        WHEEL / SCROLL ZOOM HANDLER
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    handleWheel(e) {
+        // Prevent default scrolling
+        e.preventDefault();
+
+        // e.deltaY < 0 => Scrolled up => zoom in
+        // e.deltaY > 0 => Scrolled down => zoom out
+        if (e.deltaY < 0) {
+            this.zoomIn();
+        } else {
+            this.zoomOut();
+        }
+    }
+
+    zoomIn() {
+        // Increase barWidth and barSpacing
+        this.barWidth = Math.min(this.barWidth + 1, 100);   // put some max limit if you like
+        this.barSpacing = Math.min(this.barSpacing + 0.5, 50);
+
+        // Update all Panes
+        for (const pane of this.panes) {
+            pane.setBarSize(this.barWidth, this.barSpacing);
+        }
+        // Also update date-axis
+        this.dateAxisPane.setBarSize(this.barWidth, this.barSpacing);
+    }
+
+    zoomOut() {
+        // Decrease barWidth and barSpacing but not below 1 (or 0 for spacing)
+        this.barWidth = Math.max(this.barWidth - 1, 1);
+        this.barSpacing = Math.max(this.barSpacing - 0.5, 0);
+
+        // Update all Panes
+        for (const pane of this.panes) {
+            pane.setBarSize(this.barWidth, this.barSpacing);
+        }
+        // Also update date-axis
+        this.dateAxisPane.setBarSize(this.barWidth, this.barSpacing);
     }
 
     // -------------------------------------------------------------------
