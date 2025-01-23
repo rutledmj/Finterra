@@ -1,6 +1,6 @@
 ﻿// chart.js
 
-import { Window } from '../components.js';  // Your updated window class
+import { Window } from '../components.js';
 import { Pane } from './pane.js';
 import { DateAxisPane } from './date-axis-pane.js';
 import { Interval } from './interval.js';
@@ -44,19 +44,14 @@ export class Chart extends Window {
         this.panes = [];
         this.dateAxisPane = null;
         this.dateAxisHeight = 32; // fixed date-axis height
+        this.priceAxisWidth = 64; // if you keep a fixed price-axis width
 
-        // At this point, the parent Window constructor has ALREADY
-        // appended the modal + chartContainer to the DOM.
-        // But we can't measure it instantly, so we wait 1 frame:
+        // At this point, the parent Window has appended everything to the DOM
         requestAnimationFrame(() => {
             this.postInit();
         });
     }
 
-    /**
-     * Called 1 frame after the parent Window has appended everything to the DOM.
-     * We can now measure .body size, build panes, and fetch data.
-     */
     postInit() {
         // 1) Measure the .body size
         const { width: bodyWidth, height: bodyHeight } = this.getBodyDimensions();
@@ -69,10 +64,9 @@ export class Chart extends Window {
     }
 
     /**
-     * Utility: measure the .body container's current size in the DOM.
+     * Returns the current .body dimensions in the DOM
      */
     getBodyDimensions() {
-        // this.body is the chartContainer we passed to the Window constructor
         const rect = this.body.getBoundingClientRect();
         return {
             width: Math.floor(rect.width),
@@ -81,12 +75,11 @@ export class Chart extends Window {
     }
 
     /**
-     * Creates N stacked panes + 1px divider after each + bottom date axis
+     * Creates N stacked panes, 1px divider after each, and a bottom date axis
      */
     initChartLayout(containerWidth, containerHeight) {
         // totalDividers = N (one after each pane)
         const totalDividers = this.numPanes;
-        // eachPaneHeight = floor((containerHeight - dateAxisHeight - totalDividers) / N)
         const eachPaneHeight = Math.floor(
             (containerHeight - this.dateAxisHeight - totalDividers) / this.numPanes
         );
@@ -99,7 +92,7 @@ export class Chart extends Window {
                 barWidth: this.barWidth,
                 barSpacing: this.barSpacing,
                 offset: this.offset,
-                priceAxisWidth: 64
+                priceAxisWidth: this.priceAxisWidth
             });
             this.panes.push(pane);
 
@@ -117,29 +110,30 @@ export class Chart extends Window {
             this.body.appendChild(divider);
         }
 
-        // The DateAxisPane at the bottom
+        // ~~~~~~ IMPORTANT ~~~~~~
+        // Compute the "indicator" width so that the date-axis
+        // matches the candlestick area.
+        const indicatorWidth = containerWidth - this.priceAxisWidth - 1;
+
+        // The DateAxisPane at the bottom (matching indicatorWidth)
         this.dateAxisPane = new DateAxisPane({
-            width: this.width,
-            height: 32,
+            width: indicatorWidth,
+            height: this.dateAxisHeight,
             stockData: this.processedData,
             barWidth: this.barWidth,
             barSpacing: this.barSpacing,
-            offset: this.offset,
-            mainChartWidth: (this.width - this.priceAxisWidth - 1),
-            interval: this.interval
-
-
+            offset: this.offset
         });
+
+        // Append the date-axis
         this.body.appendChild(this.dateAxisPane.canvas);
     }
 
     /**
-     * Called automatically after the window's size changes
-     * (if you do `if (typeof this.resize==='function') this.resize(...)`
-     * in window.js handleResizeMouseMove).
+     * Called automatically on window resize
      */
     resize(newWidth, newHeight) {
-        // We can measure the body container again
+        // Re-measure body container
         const { width: bodyWidth, height: bodyHeight } = this.getBodyDimensions();
 
         const totalDividers = this.numPanes;
@@ -152,9 +146,10 @@ export class Chart extends Window {
             pane.resize(bodyWidth, eachPaneHeight);
         }
 
-        // Resize the DateAxis
+        // Resize the DateAxisPane so it stays the same width as the indicator area
         if (this.dateAxisPane) {
-            this.dateAxisPane.resize(bodyWidth, this.dateAxisHeight);
+            const indicatorWidth = bodyWidth - this.priceAxisWidth - 1;
+            this.dateAxisPane.resize(indicatorWidth, this.dateAxisHeight);
         }
     }
 
@@ -162,30 +157,28 @@ export class Chart extends Window {
         try {
             this.rawData = this.generateMockData(1000);
             this.processedData = this.compileData(this.rawData);
-            this.updateAllPanes();
+
+            // Update all panes
+            for (const pane of this.panes) {
+                pane.updateData(this.processedData);
+            }
+            // Update date-axis
+            if (this.dateAxisPane) {
+                this.dateAxisPane.updateData(this.processedData);
+            }
         } catch (err) {
             console.error('Error fetching data:', err);
         }
     }
 
     compileData(rawData) {
+        // In real usage, do any data transformations or merges here
         return rawData;
-    }
-
-    updateAllPanes() {
-        for (const pane of this.panes) {
-            pane.updateData(this.processedData);
-        }
-        if (this.dateAxisPane) {
-            this.dateAxisPane.updateData(this.processedData);
-        }
     }
 
     generateMockData(count) {
         let price = 1000;
         const data = [];
-
-        // Start from today's date (can be changed to any date)
         let currentDate = new Date();
 
         for (let i = 0; i < count; i++) {
@@ -195,11 +188,7 @@ export class Chart extends Window {
             const low = Math.min(open, close) - Math.random();
             price = close;
 
-            // Convert current date to a timestamp (in seconds).
-            // Some charting libraries expect time in seconds, others in milliseconds, or even a Date object.
-            // Adjust accordingly if your library requires a different format.
             const timestamp = new Date(currentDate);
-
             data.push({
                 time: timestamp,
                 open,
@@ -209,13 +198,123 @@ export class Chart extends Window {
                 volume: Math.floor(Math.random() * 10000)
             });
 
-            // Move to the next day (change as needed for your time increments)
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
-        console.log(data);
-
         return data;
     }
 
+    // -------------------------------------------------------------------
+    // Static helpers for date ticks (unchanged from earlier examples)
+    // -------------------------------------------------------------------
+    static computeDateTicks(stockData, startIndex, endIndex,
+        totalWidth, barWidth, barSpacing, offset,
+        desiredTimeTicks = 5) {
+        // (unchanged logic)
+        if (startIndex > endIndex || !stockData.length) return [];
+
+        const startTime = Chart.getTimeValue(stockData[startIndex].time);
+        const endTime = Chart.getTimeValue(stockData[endIndex].time);
+        if (startTime >= endTime) return [];
+
+        const rangeMs = endTime - startTime;
+        const step = Chart.computeTimeStepCustom(rangeMs, desiredTimeTicks);
+
+        const niceStart = Chart.roundDownToInterval(startTime, step);
+        const niceEnd = Chart.roundUpToInterval(endTime, step);
+
+        const candleSpace = barWidth + barSpacing;
+        const xRightmost = totalWidth - barWidth - offset;
+
+        const results = [];
+        for (let t = niceStart; t <= niceEnd + 1e-9; t += step) {
+            if (t < startTime || t > endTime) continue;
+
+            const barIdx = Chart.findClosestBarIndex(stockData, t, startIndex, endIndex);
+            const distBars = endIndex - barIdx;
+            let xPos = xRightmost - distBars * candleSpace;
+            xPos += barWidth * 0.5;
+
+            if (xPos >= 0 && xPos <= totalWidth) {
+                const label = Chart.formatDateByStep(new Date(t), step);
+                results.push({ x: xPos, label, timeValue: t });
+            }
+        }
+        return results;
+    }
+
+    static getTimeValue(time) {
+        if (time instanceof Date) return time.getTime();
+        // If numeric but looks like seconds, multiply by 1000
+        if (typeof time === 'number' && time > 1e9 && time < 2e10) {
+            return time * 1000;
+        }
+        return +time;
+    }
+
+    static computeTimeStepCustom(rangeMs, desiredTicks) {
+        const INTERVALS = [
+            60000, 300000, 900000, 1200000, 1800000,
+            3600000, 7200000, 10800000, 14400000,
+            86400000, 172800000, 259200000,
+            604800000, 1209600000, 2592000000,
+            5184000000, 7776000000, 15552000000,
+            31536000000
+        ];
+        if (rangeMs <= 0) return 60000;
+
+        let best = INTERVALS[0];
+        let bestDiff = Infinity;
+        for (let interval of INTERVALS) {
+            const tickCount = Math.floor(rangeMs / interval) + 1;
+            const diff = Math.abs(tickCount - desiredTicks);
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                best = interval;
+            }
+        }
+        return best;
+    }
+
+    static roundDownToInterval(time, step) {
+        return Math.floor(time / step) * step;
+    }
+
+    static roundUpToInterval(time, step) {
+        return Math.ceil(time / step) * step;
+    }
+
+    static findClosestBarIndex(stockData, t, startIndex, endIndex) {
+        let left = startIndex;
+        let right = endIndex;
+        while (left < right) {
+            const mid = (left + right) >>> 1;
+            const midTime = Chart.getTimeValue(stockData[mid].time);
+            if (midTime === t) return mid;
+            else if (midTime < t) left = mid + 1;
+            else right = mid;
+        }
+        const leftTime = Chart.getTimeValue(stockData[left].time);
+        if (left > startIndex) {
+            const prevTime = Chart.getTimeValue(stockData[left - 1].time);
+            if (Math.abs(prevTime - t) <= Math.abs(leftTime - t)) {
+                return left - 1;
+            }
+        }
+        return left;
+    }
+
+    static formatDateByStep(dateObj, step) {
+        if (step < 86400000) {
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const mm = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+        } else if (step < 2592000000) {
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return d;
+        } else if (step < 31536000000) {
+            return dateObj.toLocaleString('en-US', { month: 'short' });
+        } else {
+            return String(dateObj.getFullYear());
+        }
+    }
 }
