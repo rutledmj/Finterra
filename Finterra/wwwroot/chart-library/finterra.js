@@ -1,42 +1,100 @@
-﻿import { Divider, Toolbar, SymbolSearch, Account, NewChart, AlertManager, Layout, Settings, Clock, ServerToggle, CursorSelect, DrawingTool, TextTool, Watchlist, OptionChain, Hotlist, News, Calendar, Scanner, GoToDate } from './components.js';
-import { Interval, createElement } from './Utils.js'
+﻿import {
+    Divider,
+    Toolbar,
+    SymbolSearch,
+    Account,
+    NewChart,
+    AlertManager,
+    Layout,
+    Settings,
+    Clock,
+    ServerToggle,
+    CursorSelect,
+    DrawingTool,
+    TextTool,
+    Watchlist,
+    OptionChain,
+    Hotlist,
+    News,
+    Calendar,
+    Scanner,
+    GoToDate
+} from './components.js';
+
+import { Interval, createElement } from './Utils.js';
 import { QuotemediaService } from './Data/QuotemediaService.js';
 import { Workspace } from './Workspace.js';
 import { AlchemChartsService } from './Data/AlchemChartsService.js';
 import { Indicators } from './Studies/Studies.js';
+
+/**
+ * Main application class for the Finterra UI.
+ * Manages data connections, chart services, layout, and toolbars.
+ */
 export class Finterra {
+    /**
+     * @param {Object} options
+     * @param {string} options.container - The ID of the container element in the DOM
+     * @param {string} options.wmid - WMID for Quotemedia
+     * @param {string} options.username - Username for Quotemedia
+     * @param {string} options.password - Password for Quotemedia
+     */
     constructor(options) {
-        this.container = document.getElementById(options.container || 'body')
+        if (!options) {
+            throw new Error("Finterra: Options object is required.");
+        }
+
+        this.container = document.getElementById(options.container || 'body');
+        if (!this.container) {
+            throw new Error(`Finterra: Could not find container with ID "${options.container}"`);
+        }
 
         this.wmid = options.wmid;
         this.username = options.username;
         this.password = options.password;
 
+        // Will store references to your data services, toolbars, and workspace
+        this.quotestream = null;
+        this.alchemcharts = null;
+        this.workspace = null;
+
+        // Could add a “destroyed” flag if we want to handle teardown
+        this._destroyed = false;
+
         this.initialize();
     }
 
+    /**
+     * Main initialization method that sets up all subcomponents.
+     * Called automatically from constructor.
+     */
     async initialize() {
-        console.log(this);
+        console.log("Finterra: Initialize started...");
 
-        Object.assign(this.container, {
-            style: 'height:100vh; position:relative; border-radius:2px; border:1px solid var(--workspace-border); background-color:var(--toolbar-border)'
+        // Basic styling on the container
+        Object.assign(this.container.style, {
+            height: '100vh',
+            position: 'relative',
+            borderRadius: '2px',
+            border: '1px solid var(--workspace-border)',
+            backgroundColor: 'var(--toolbar-border)'
         });
 
+        // Initialize data connections and chart services
         await this.initializeStreamer();
         await this.initializeAlchemCharts();
+
+        // Build out the UI layout with toolbars and workspace
         await this.initializeLayout();
-        //await this.initializeChart();
-        
+        // If you need to load an initial chart after everything:
+        // await this.initializeChart();
+
+        console.log("Finterra: Initialize complete.");
     }
 
-    async initializeAlchemCharts() {
-        this.alchemcharts = new AlchemChartsService({
-            email: 'rutledmj@gmail.com',
-            password: 'AppleTest1'
-        });
-        //await this.alchemcharts.initialize();
-    }
-
+    /**
+     * Initialize Quotemedia streamer service.
+     */
     async initializeStreamer() {
         this.quotestream = new QuotemediaService({
             wmid: this.wmid,
@@ -45,34 +103,54 @@ export class Finterra {
             flex: this
         });
 
+        // Return the service (if needed by caller)
         return this.quotestream;
     }
 
-    async initializeChart() {
+    /**
+     * Initialize AlchemCharts service.
+     */
+    async initializeAlchemCharts() {
+        this.alchemcharts = new AlchemChartsService({
+            email: 'rutledmj@gmail.com',
+            password: 'AppleTest1'
+        });
 
-        console.log(this.workspace.charts);
-        for (let chart of this.workspace.charts) {
-            
-            var endDate = new Date();
+        // Example: If AlchemCharts requires async init, you might do:
+        // await this.alchemcharts.initialize();
+    }
+
+    /**
+     * Example of how you'd initialize your charts. Currently commented out
+     * but you can adapt this to fetch and load data, then paint the chart.
+     */
+    async initializeChart() {
+        if (!this.workspace?.charts) return;
+
+        for (const chart of this.workspace.charts) {
+            const endDate = new Date();
             const startDate = new Date(endDate);
             startDate.setFullYear(startDate.getFullYear() - 10);
 
-            //chart.data = await this.alchemcharts.indexTS(chart.symbol, startDate, endDate, chart.interval)
-            //    .then(response => {
-            //        return response;
-            //    });
-
-            //chart.paint();
+            // chart.data = await this.alchemcharts.indexTS(chart.symbol, startDate, endDate, chart.interval);
+            // chart.paint();
         }
     }
 
+    /**
+     * Sets up the main layout: header (top toolbar),
+     * main content area (left sidebar, workspace, right sidebar),
+     * and footer (bottom toolbar).
+     */
     async initializeLayout() {
-
-        this.container.style.display = 'flex';
-        this.container.style.flexDirection = 'column';
+        // Container flex layout
+        Object.assign(this.container.style, {
+            display: 'flex',
+            flexDirection: 'column'
+        });
 
         const header = createElement('div', {
-            class: 'header', 
+            class: 'header',
             style: 'width:100%; padding-bottom:4px'
         });
 
@@ -93,27 +171,24 @@ export class Finterra {
 
         const sidebarRight = createElement('div', {
             class: 'sidebar-right',
-            style: 'width:min-content;height:100%;padding-left: 4px'
+            style: 'width:min-content;height:100%;padding-left:4px'
         });
 
-        const workspace = createElement('div', {
+        const workspaceEl = createElement('div', {
             class: 'workspace',
             style: 'width:100%; flex:1'
         });
 
         const footer = createElement('div', {
             class: 'footer',
-            style: 'width:100%; padding-top: 4px'
-        })
+            style: 'width:100%; padding-top:4px'
+        });
 
-        contentArea.append(workspace, footer);
-
+        contentArea.append(workspaceEl, footer);
         mainContent.append(sidebarLeft, contentArea, sidebarRight);
-
         this.container.append(header, mainContent);
 
-        
-        // Creating the top, middle, and bottom toolbars
+        // Create toolbars
         this.topToolbar = new Toolbar({
             flex: this,
             container: header,
@@ -122,14 +197,16 @@ export class Finterra {
                 Divider,
                 SymbolSearch,
                 Divider,
+                NewChart,
+                Divider,
                 AlertManager,
                 Divider,
-                Layout,
-                Divider,
+                // Layout,
+                // Divider,
                 GoToDate,
-                Settings,
+                Settings
             ]
-        });        
+        });
 
         this.bottomToolbar = new Toolbar({
             flex: this,
@@ -139,14 +216,14 @@ export class Finterra {
                 ServerToggle
             ]
         });
-        
+
         this.leftToolbar = new Toolbar({
             flex: this,
             container: sidebarLeft,
             widgets: [
                 CursorSelect,
                 DrawingTool,
-                TextTool,
+                TextTool
             ]
         });
 
@@ -163,9 +240,27 @@ export class Finterra {
             ]
         });
 
+        // Finally, initialize the workspace
         this.workspace = new Workspace({
             flex: this,
-            container: workspace
+            container: workspaceEl
         });
+    }
+
+    /**
+     * Optional teardown method if you need to remove DOM or listeners.
+     */
+    destroy() {
+        if (this._destroyed) return;
+
+        // Example: remove DOM elements from container, tear down services
+        // this.container.innerHTML = "";
+        // this.quotestream?.destroy();
+        // this.alchemcharts?.destroy();
+        // this.workspace?.destroy();
+        // ... etc.
+
+        this._destroyed = true;
+        console.log("Finterra: Destroyed.");
     }
 }

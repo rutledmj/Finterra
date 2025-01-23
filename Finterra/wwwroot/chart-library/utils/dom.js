@@ -26,5 +26,5 @@ export function createElement(tagName, attributes = {}) {
 
 export function buttonHover(button) {
     button.addEventListener('mouseenter', () => button.style.backgroundColor = 'var(--button-hover)');
-    button.addEventListener('mouseleave', () => button.style.backgroundColor = 'var(--button-background)');
+    button.addEventListener('mouseleave', () => button.style.backgroundColor = 'transparent');
 }

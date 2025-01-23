@@ -20,9 +20,32 @@ export class Account {
 
         buttonHover(button);
 
-        button.onclick = () => {
-            this.onClickEvent();
-        }
+        const items = [
+            { name: "Home", icon: HOME_ICON },
+            { name: "Help", icon: HELP_ICON },
+            { name: "Notifications", icon: NOTIFICATION_ICON },
+            { name: "What's New", icon: NEW_ICON },
+            { type: "Divider" },
+            { name: "Sign Out", icon: SIGNOUT_ICON },
+        ];
+
+        items[3].subItems = items;
+
+        button.addEventListener('click', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const menu = new Menu({
+                triggerElement: e.currentTarget,
+                items,
+                preferredPlacement: 'bottom-right',
+                anchorCorner: 'top-left',
+            });
+            menu.show();
+        });
+
+
+        //button.onclick = () => {
+        //    this.onClickEvent();
+        //}
 
         const iconSpan = createElement('span', { innerHTML: MENU_ICON });
 

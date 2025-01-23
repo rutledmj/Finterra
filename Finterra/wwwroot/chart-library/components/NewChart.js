@@ -1,6 +1,6 @@
 ﻿import { createElement, buttonHover  } from '../Utils.js'
 import { NEW_CHART_ICON } from '../Utils/Icons.js';
-
+import { Chart, Interval } from '../Chart.js';
 export class NewChart {
     constructor(options) {
         this.toolbar = options.toolbar;
@@ -22,8 +22,9 @@ export class NewChart {
             this.onClickEvent();
         }
 
-        const iconSpan = createElement('span', { innerHTML: NEW_CHART_ICON });
-        //createSpan(NEW_CHART_ICON);
+        const iconSpan = createElement('span', {
+            innerHTML: NEW_CHART_ICON
+        });
 
         button.appendChild(iconSpan);
 
@@ -31,6 +32,24 @@ export class NewChart {
     }
 
     onClickEvent() {
+        const workspace = document.getElementById("workspace");
 
+        const myChartWindow = new Chart({
+            title: 'My Stock Chart',
+            stock: 'AAPL',
+            interval: new Interval(1, 'day', '1 Day'),
+            barWidth: 5,
+            barSpacing: 5,
+            offset: 10,
+            panes: 2,               // create 2 stacked panes
+            isMoveable: true,
+            isResizable: true,
+            isMaximizable: true,
+            isCloseable: true,
+            isBackdrop: false,
+            width: 840,
+            height: 680,
+            container: workspace
+        });
     }
 }

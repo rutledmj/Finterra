@@ -1,401 +1,221 @@
-﻿import { createElement } from '../Utils.js';
+﻿// chart.js
+
+import { Window } from '../components.js';  // Your updated window class
 import { Pane } from './pane.js';
-import { TimeAxis } from './time-axis.js';
+import { DateAxisPane } from './date-axis-pane.js';
+import { Interval } from './interval.js';
+import { createElement } from '../Utils.js';
 
-export class Chart {
-    constructor({ symbol, interval, depth, workspace }) {
-        Object.assign(this, { symbol, interval, depth, workspace });
-
-        this.dateAxisHeight = 28;
-        this.priceAxisWidth = 60;
-
-        this.barSpacing = 4;
-        this.barWidth = 6;
-
-        this.backgroundColor = "var(--chart-background)";
-        this.borderColor = "var(--chart-border)";
-
-        this.offset = 0;
-
-        this.initialize();
-    }
-
-    initialize() {
-        this.container = createElement('div', {
-            class: 'chart-wrapper',
-            style: 'width:100%; height:100%; background-color:var(--chart-background); position:relative; display:flex; flex-direction:column'
-        });
-        //    createElement('div', 'chart-wrapper', {
-        //    width: `100%`,
-        //    height: `100%`,
-        //    backgroundColor: 'var(--chart-background)',
-        //    position: 'relative',
-        //    display: 'flex',
-        //    flexDirection: 'column'
-        //});
-
-        this.workspace.container.appendChild(this.container);
-
-        this.onWheelScroll();
-        this.onKeyPress();
-        this.onResize();
-
-        this.createPanes();
-
-        this.timeAxis = new TimeAxis(this);
-    }
-
-    onResize() {
-        const resizeObserver = new ResizeObserver(entries => {
-            for (let entry of entries) {
-                // Handle the resize event
-                console.log(this.panes);
-
-                console.log('Element resized:', entry.target);
-                console.log('New width:', entry.contentRect.width);
-                console.log('New height:', entry.contentRect.height);
+export class Chart extends Window {
+    constructor(options = {}) {
+        // 1) Create a container for our chart's body
+        const chartContainer = createElement('div', {
+            class: 'chart-container',
+            style: {
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                height: '100%',
+                boxSizing: 'border-box',
+                overflow: 'hidden'
             }
         });
 
-        //resizeObserver.observe(this.chartWrapper);
-    }
+        // 2) Pass relevant options (including 'body') to the Window constructor
+        super({
+            ...options,
+            body: chartContainer,
+            title: options.title || 'Stock Chart'
+        });
 
-    onWheelScroll() {
-        this.container.onwheel = (e) => {
-            e.preventDefault();
+        // 3) Chart-specific fields
+        this.stock = options.stock || 'AAPL';
+        this.interval = options.interval || new Interval(1, 'day', '1 Day');
+        this.barWidth = options.barWidth || 5;
+        this.barSpacing = options.barSpacing || 2;
+        this.offset = options.offset || 10;
+        this.numPanes = options.panes || 1;
 
-            this.barSpacing = Math.max(Math.sign(-e.deltaY) + this.barSpacing, 1);
-            this.barWidth = Math.max(Math.sign(-e.deltaY) + this.barWidth, 1);
+        // Data arrays
+        this.rawData = [];
+        this.processedData = [];
 
-            for (let pane of this.panes) {
-                pane.getDataRange();
-                pane.clear();
-                pane.paint();
-                pane.paintAxis();
-            }
-
-            this.timeAxis.clear();
-            this.timeAxis.paint();
-        }
-    }
-
-    onKeyPress() {
-        document.onkeydown = (e) => {
-            e.preventDefault();
-
-            switch (e.key) {
-                case "ArrowLeft":
-                    this.updateOffset(1);
-                    break;
-                case "ArrowRight":
-                    this.updateOffset(-1);
-                    break;
-                case "Home":
-                    this.resetOffset();
-                    break;
-            }
-        }
-    }
-
-    updateOffset(v) {
-        this.offset += v;
-
-        for (let pane of this.panes) {
-            pane.getDataRange();
-            pane.clear();
-            pane.paint();
-            pane.paintAxis();
-            pane.updateDataWindow();
-        }
-
-        this.timeAxis.clear();
-        this.timeAxis.paint();
-    }
-
-    resetOffset() {
-        this.offset = 0;
-
-        for (let pane of this.panes) {
-            pane.getDataRange();
-            pane.clear();
-            pane.paint();
-            pane.paintAxis();
-            pane.updateDataWindow();
-        }
-
-        this.timeAxis.clear();
-        this.timeAxis.paint();
-    }
-
-    createPanes() {
-        //const paneCount = this.panesJSON.length + 1;
-
+        // Pane references
         this.panes = [];
+        this.dateAxisPane = null;
+        this.dateAxisHeight = 32; // fixed date-axis height
 
-        const paneHeight = (this.workspace.container.clientHeight - this.dateAxisHeight) / Math.max(this.panes.length, 1);
-        const paneWidth = this.workspace.container.clientWidth - this.priceAxisWidth;
-
-        // Create and add the price pane first
-        this.addPane(this.pricePane, paneWidth, paneHeight);
-
-        /*
-        // Create and add additional panes based on panesJSON
-        this.panesJSON.forEach((paneConfig, idx) => {
-            this.addPane(paneConfig, paneWidth, paneHeight);
+        // At this point, the parent Window constructor has ALREADY
+        // appended the modal + chartContainer to the DOM.
+        // But we can't measure it instantly, so we wait 1 frame:
+        requestAnimationFrame(() => {
+            this.postInit();
         });
-        */
-        //this.panes.forEach(pane => pane.appendTo(this.container));
     }
 
-    addPane(options, width, height, top, paneCount) {
-        const paneOptions = {
-            chart: this,
-            options, // Assuming Pane constructor is adapted to accept these options
-            height,
-            width,
+    /**
+     * Called 1 frame after the parent Window has appended everything to the DOM.
+     * We can now measure .body size, build panes, and fetch data.
+     */
+    postInit() {
+        // 1) Measure the .body size
+        const { width: bodyWidth, height: bodyHeight } = this.getBodyDimensions();
+
+        // 2) Build the chart layout (panes, date axis)
+        this.initChartLayout(bodyWidth, bodyHeight);
+
+        // 3) Fetch data and render
+        this.fetchAndRender();
+    }
+
+    /**
+     * Utility: measure the .body container's current size in the DOM.
+     */
+    getBodyDimensions() {
+        // this.body is the chartContainer we passed to the Window constructor
+        const rect = this.body.getBoundingClientRect();
+        return {
+            width: Math.floor(rect.width),
+            height: Math.floor(rect.height)
         };
-        this.panes.push(new Pane(paneOptions));
     }
 
-    paint() {
-        this.timeAxis.paint(this.data);
-        for (let pane of this.panes) {
-            pane.calculate(this.data);
-            pane.getDataRange();
-            pane.paint();
-            pane.paintAxis();
-            pane.updateDataWindow();
+    /**
+     * Creates N stacked panes + 1px divider after each + bottom date axis
+     */
+    initChartLayout(containerWidth, containerHeight) {
+        // totalDividers = N (one after each pane)
+        const totalDividers = this.numPanes;
+        // eachPaneHeight = floor((containerHeight - dateAxisHeight - totalDividers) / N)
+        const eachPaneHeight = Math.floor(
+            (containerHeight - this.dateAxisHeight - totalDividers) / this.numPanes
+        );
+
+        for (let i = 0; i < this.numPanes; i++) {
+            const pane = new Pane({
+                width: containerWidth,
+                height: eachPaneHeight,
+                stockData: this.processedData,
+                barWidth: this.barWidth,
+                barSpacing: this.barSpacing,
+                offset: this.offset,
+                priceAxisWidth: 64
+            });
+            this.panes.push(pane);
+
+            // Add the pane container
+            this.body.appendChild(pane.container);
+
+            // Add a 1px divider after each pane
+            const divider = createElement('div', {
+                style: {
+                    width: '100%',
+                    height: '1px',
+                    backgroundColor: 'var(--toolbar-border)'
+                }
+            });
+            this.body.appendChild(divider);
+        }
+
+        // The DateAxisPane at the bottom
+        this.dateAxisPane = new DateAxisPane({
+            width: this.width,
+            height: 32,
+            stockData: this.processedData,
+            barWidth: this.barWidth,
+            barSpacing: this.barSpacing,
+            offset: this.offset,
+            mainChartWidth: (this.width - this.priceAxisWidth - 1),
+            interval: this.interval
+
+
+        });
+        this.body.appendChild(this.dateAxisPane.canvas);
+    }
+
+    /**
+     * Called automatically after the window's size changes
+     * (if you do `if (typeof this.resize==='function') this.resize(...)`
+     * in window.js handleResizeMouseMove).
+     */
+    resize(newWidth, newHeight) {
+        // We can measure the body container again
+        const { width: bodyWidth, height: bodyHeight } = this.getBodyDimensions();
+
+        const totalDividers = this.numPanes;
+        const eachPaneHeight = Math.floor(
+            (bodyHeight - this.dateAxisHeight - totalDividers) / this.numPanes
+        );
+
+        // Resize each Pane
+        for (const pane of this.panes) {
+            pane.resize(bodyWidth, eachPaneHeight);
+        }
+
+        // Resize the DateAxis
+        if (this.dateAxisPane) {
+            this.dateAxisPane.resize(bodyWidth, this.dateAxisHeight);
         }
     }
 
-    /*
-    pricePane = {
-        interval: this.interval,
-        price: {
-            name: 'candlestick',
-            bodyup: '#fff',//'#94b694',//'#089981',
-            bodydown: '#ff0000',//#b69494',//'#f23645',
-            borderup: '#fff', //'#94b694',//'#089981',
-            borderdown: '#ff0000',//'#b69494',//'#f23645',
-            wickup: '#fff', //'#94b694',//'#089981',
-            wickdown: '#ff0000',//'#b69494',//'#f23645',
-        },
-        overlays: [
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 2,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#ff0000',
-                    thickness: 2
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 3,
-                    offset: 3,
-                    source: 'close'
-                },
-                style: {
-                    color: '#00ff00',
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 34,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#1e90ff'
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 55,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#ff8c00'
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 89,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#008080'
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 144,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#ffffff'
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 233,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#000000'
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 377,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#a52a2a '
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 610,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#800080'
-                },
-                yscale: false
-            },
-            {
-                name: "SimpleMovingAverage",
-                displayName: 'SMA',
-                inputs: {
-                    length: 987,
-                    offset: 0,
-                    source: 'close'
-                },
-                style: {
-                    color: '#ffc0cb'
-                },
-                yscale: false
-            },
-            {
-                name: "BollingerBands",
-                displayName: 'BB',
-                inputs: {
-                    length: 21,
-                    stddev: 2,
-                    source: 'close'
-                },
-                style: {
-                    upper: '#00008b',
-                    lower: '#00008b',
-                    middle: '#00008b',
-                },
-                yscale: false
-            },
-            {
-                name: "autowave",
-                name: "AW",
-                inputs: {
-                    length: 21,
-                },
-                style: {
-                    color: 'yellow'
-                }
-            },
-        ]
-    };
-    panesJSON =
-        [
-            {
-                studies: [{
-                    name: 'StochasticRSI',
-                    displayName: 'Stoch RSI',
-                    inputs: {
-                        k: 3,
-                        d: 5,
-                        rsi: 13,
-                        stochastic: 21,
-                        source: 'close'
-                    },
-                    style: {
-                        k: 'red',
-                        d: 'lime',
-                        upperband: 'teal',
-                        lowerband: 'teal',
-                        middleband: 'teal',
-                    },
-                    yscale: true
-                }]
-            },
-            {
-                studies: [{
-                    name: 'MACD',
-                    displayName: 'MACD',
-                    inputs: {
-                        fast: 12,
-                        signal: 26,
-                        slow: 9,
-                        source: 'close'
-                    },
-                    style: {
-                        macd: 'red',
-                        signal: 'lime',
-                        histogram: 'teal',
-                        zeroline: 'teal'
-                    },
-                    yscale: true
-                }]
-            },
-            {
-                studies: [{
-                    name: 'ADX',
-                    displayName: 'ADX',
-                    inputs: {
-                        length: 5,
-                        source: 'close'
-                    },
-                    style: {
-                        plusdi: 'red',
-                        minusdi: 'lime',
-                    },
-                    yscale: true
-                }]
-            }
-        ];
-        */
+    async fetchAndRender() {
+        try {
+            this.rawData = this.generateMockData(1000);
+            this.processedData = this.compileData(this.rawData);
+            this.updateAllPanes();
+        } catch (err) {
+            console.error('Error fetching data:', err);
+        }
+    }
+
+    compileData(rawData) {
+        return rawData;
+    }
+
+    updateAllPanes() {
+        for (const pane of this.panes) {
+            pane.updateData(this.processedData);
+        }
+        if (this.dateAxisPane) {
+            this.dateAxisPane.updateData(this.processedData);
+        }
+    }
+
+    generateMockData(count) {
+        let price = 1000;
+        const data = [];
+
+        // Start from today's date (can be changed to any date)
+        let currentDate = new Date();
+
+        for (let i = 0; i < count; i++) {
+            const open = price;
+            const close = open + (Math.random() - 0.5) * 2;
+            const high = Math.max(open, close) + Math.random();
+            const low = Math.min(open, close) - Math.random();
+            price = close;
+
+            // Convert current date to a timestamp (in seconds).
+            // Some charting libraries expect time in seconds, others in milliseconds, or even a Date object.
+            // Adjust accordingly if your library requires a different format.
+            const timestamp = new Date(currentDate);
+
+            data.push({
+                time: timestamp,
+                open,
+                high,
+                low,
+                close,
+                volume: Math.floor(Math.random() * 10000)
+            });
+
+            // Move to the next day (change as needed for your time increments)
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        console.log(data);
+
+        return data;
+    }
+
 }
